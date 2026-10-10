@@ -1,0 +1,25 @@
+{% extends "admin/index.html" %}
+{% load i18n unfold %}
+
+{% block content %}
+    {% if kpis %}
+        <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 xl:grid-cols-4">
+            {% for kpi in kpis %}
+                {% component "unfold/components/card.html" with title=kpi.title icon=kpi.icon %}
+                    <div class="flex flex-col gap-1">
+                        <span class="text-3xl font-bold text-font-important-light dark:text-font-important-dark">
+                            {{ kpi.value }}
+                        </span>
+                        {% if kpi.description %}
+                            <span class="text-sm text-font-subtle-light dark:text-font-subtle-dark">
+                                {{ kpi.description }}
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endcomponent %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {{ block.super }}
+{% endblock %}
