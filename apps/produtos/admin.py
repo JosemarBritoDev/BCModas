@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 
 from apps.tenants.mixins import EmpresaScopedAdminMixin
+from apps.usuarios.mixins import PerfilAdminMixin
 
 from .models import SKU, Modelo
 
@@ -15,7 +16,8 @@ class SKUInline(TabularInline):
 
 
 @admin.register(Modelo)
-class ModeloAdmin(EmpresaScopedAdminMixin, ModelAdmin):
+class ModeloAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
+    perfis_negados = ("FINANCEIRO",)
     inlines = [SKUInline]
     list_display = (
         "nome",
@@ -66,7 +68,8 @@ class ModeloAdmin(EmpresaScopedAdminMixin, ModelAdmin):
 
 
 @admin.register(SKU)
-class SKUAdmin(EmpresaScopedAdminMixin, ModelAdmin):
+class SKUAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
+    perfis_negados = ("FINANCEIRO",)
     list_display = (
         "modelo",
         "cor_swatch",

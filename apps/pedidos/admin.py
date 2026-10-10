@@ -3,11 +3,26 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 
+from apps.financeiro.services import criar_conta_receber_para_pedido
 from apps.tenants.mixins import EmpresaScopedAdminMixin
 from apps.tenants.models import Empresa
+from apps.usuarios.mixins import PerfilAdminMixin
 
 from .models import ItemPedido, Pedido
 from .services import EstoqueInsuficiente, reservar_estoque
+
+PERFIS_VENDAS = ("SUPERADMIN", "GERENTE", "VENDAS", "COMPRAS")
+
+CAMPOS_COMERCIAIS = (
+    "cliente",
+    "cliente_nome",
+    "cliente_documento",
+    "cliente_whatsapp",
+    "total_itens",
+    "valor_total",
+    "aceite_lgpd",
+    "status_financeiro",
+)
 
 
 class ItemPedidoInline(TabularInline):
@@ -28,7 +43,8 @@ class ItemPedidoInline(TabularInline):
 
 
 @admin.register(Pedido)
-class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
+class PedidoAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
+    perfis_permitidos = PERFIS_VENDAS
     inlines = [ItemPedidoInline]
     list_display = (
         "id",
@@ -37,11 +53,11 @@ class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
         "total_itens",
         "valor_total",
         "status",
-        "aceite_lgpd",
+        "status_financeiro",
         "created_at",
     )
     list_display_links = ("id", "cliente_nome")
-    list_filter = ("status", "aceite_lgpd")
+    list_filter = ("status", "status_financeiro", "aceite_lgpd")
     search_fields = (
         "cliente_nome",
         "cliente_documento",
@@ -70,7 +86,7 @@ class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
         ),
         (
             _("Pedido"),
-            {"fields": ("total_itens", "valor_total", "status")},
+            {"fields": ("total_itens", "valor_total", "status", "status_financeiro")},
         ),
         (
             _("Consentimento LGPD"),
@@ -80,32 +96,26 @@ class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
     )
 
     # ---- Travas de segurança (RBAC) --------------------------------------
-    def has_view_permission(self, request, obj=None):
-        return bool(request.user.is_authenticated)
-
-    def has_change_permission(self, request, obj=None):
-        # Todos os perfis internos podem abrir o pedido para atualizar o
-        # status de entrega; a edição de itens/valores é travada abaixo.
-        return bool(request.user.is_authenticated)
-
     def has_add_permission(self, request):
-        return bool(getattr(request.user, "is_gerente", False))
+        return self._perfil_autorizado(request) and bool(
+            getattr(request.user, "is_gerente", False)
+        )
 
     def has_delete_permission(self, request, obj=None):
-        return bool(getattr(request.user, "is_gerente", False))
+        return self._perfil_autorizado(request) and bool(
+            getattr(request.user, "is_gerente", False)
+        )
 
     def get_readonly_fields(self, request, obj=None):
         readonly = list(super().get_readonly_fields(request, obj))
-        if not request.user.is_gerente:
-            readonly += [
-                "cliente",
-                "cliente_nome",
-                "cliente_documento",
-                "cliente_whatsapp",
-                "total_itens",
-                "valor_total",
-                "aceite_lgpd",
-            ]
+        if request.user.is_gerente:
+            return readonly
+        # Perfis operacionais não alteram valores/dados comerciais nem a
+        # liberação financeira do pedido.
+        readonly += list(CAMPOS_COMERCIAIS)
+        role = getattr(request.user, "role", None)
+        if role == "COMPRAS":
+            readonly.append("status")
         return readonly
 
     def save_model(self, request, obj, form, change):
@@ -115,13 +125,16 @@ class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def save_related(self, request, form, formsets, change):
-        """Baixa o estoque físico dos SKUs ao criar um pedido manualmente."""
+        """Baixa o estoque físico e gera a conta a receber em pedido manual."""
         super().save_related(request, form, formsets, change)
         if change:
             return
+        pedido = form.instance
+        criar_conta_receber_para_pedido(pedido)
+
         itens = [
             (item.sku_id, item.quantidade)
-            for item in form.instance.itens.all()
+            for item in pedido.itens.all()
             if item.quantidade
         ]
         if not itens:

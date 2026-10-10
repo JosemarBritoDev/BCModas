@@ -3,12 +3,14 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
 from apps.tenants.mixins import EmpresaScopedAdminMixin
+from apps.usuarios.mixins import PerfilAdminMixin
 
 from .models import Cliente
 
 
 @admin.register(Cliente)
-class ClienteAdmin(EmpresaScopedAdminMixin, ModelAdmin):
+class ClienteAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
+    perfis_negados = ("FINANCEIRO",)
     list_display = (
         "nome_razao_social",
         "tipo_pessoa",

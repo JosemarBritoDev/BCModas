@@ -40,3 +40,25 @@ class Usuario(AbstractUser):
             self.is_superuser
             or self.role in {self.Role.GERENTE, self.Role.SUPERADMIN}
         )
+
+    @property
+    def is_financeiro(self):
+        """Perfis com acesso ao módulo financeiro."""
+        return bool(
+            self.is_superuser
+            or self.role in {self.Role.GERENTE, self.Role.SUPERADMIN, self.Role.FINANCEIRO}
+        )
+
+    @property
+    def somente_financeiro(self):
+        """Perfil restrito exclusivamente ao setor financeiro."""
+        return bool(not self.is_superuser and self.role == self.Role.FINANCEIRO)
+
+    @property
+    def pode_editar_estoque(self):
+        """Estoque/catálogo não pode ser alterado pelo perfil Financeiro."""
+        return bool(
+            self.is_superuser
+            or self.role
+            in {self.Role.GERENTE, self.Role.SUPERADMIN, self.Role.COMPRAS, self.Role.VENDAS}
+        )

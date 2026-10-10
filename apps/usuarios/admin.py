@@ -3,11 +3,13 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
+from .mixins import PerfilAdminMixin
 from .models import Usuario
 
 
 @admin.register(Usuario)
-class UsuarioAdmin(BaseUserAdmin, ModelAdmin):
+class UsuarioAdmin(PerfilAdminMixin, BaseUserAdmin, ModelAdmin):
+    perfis_permitidos = ("SUPERADMIN", "GERENTE")
     list_display = ("username", "email", "first_name", "empresa", "role", "is_active")
     list_filter = ("role", "is_active", "is_staff", "empresa")
     search_fields = ("username", "email", "first_name", "last_name")

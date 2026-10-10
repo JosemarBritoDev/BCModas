@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'apps.clientes',
     'apps.produtos',
     'apps.pedidos',
+    'apps.financeiro',
     'apps.saas_admin',
 ]
 
@@ -196,68 +197,124 @@ AUTHENTICATION_BACKENDS = [
 
 
 def bc_modas_navigation(request):
-    """Navegação do sidebar do ERP, organizada por blocos operacionais."""
-    return [
-        {
-            'title': 'Vendas',
-            'separator': False,
-            'items': [
-                {
-                    'title': 'Pedidos',
-                    'icon': 'shopping_cart',
-                    'link': reverse_lazy('admin:pedidos_pedido_changelist'),
-                },
-            ],
-        },
-        {
-            'title': 'Produtos',
-            'separator': True,
-            'items': [
-                {
-                    'title': 'Modelos',
-                    'icon': 'checkroom',
-                    'link': reverse_lazy('admin:produtos_modelo_changelist'),
-                },
-                {
-                    'title': 'SKUs / Grade',
-                    'icon': 'qr_code_2',
-                    'link': reverse_lazy('admin:produtos_sku_changelist'),
-                },
-            ],
-        },
-        {
-            'title': 'Clientes',
-            'separator': True,
-            'items': [
-                {
-                    'title': 'Clientes',
-                    'icon': 'people',
-                    'link': reverse_lazy('admin:clientes_cliente_changelist'),
-                },
-            ],
-        },
-        {
-            'title': 'Sistema',
-            'separator': True,
-            'items': [
-                {
-                    'title': 'Dados da Confecção',
-                    'icon': 'storefront',
-                    'link': reverse_lazy('admin:tenants_empresa_changelist'),
-                },
-                {
-                    'title': 'Usuários',
-                    'icon': 'group',
-                    'link': reverse_lazy('admin:usuarios_usuario_changelist'),
-                },
-                {
-                    'title': 'Grupos',
-                    'icon': 'admin_panel_settings',
-                    'link': reverse_lazy('admin:auth_group_changelist'),
-                },
-            ],
-        },
-    ]
+    """Navegação do sidebar do ERP, filtrada por perfil de acesso (RBAC).
+
+    O perfil FINANCEIRO enxerga exclusivamente o bloco Financeiro, enquanto
+    os demais setores veem os blocos operacionais compatíveis com sua função.
+    """
+    user = getattr(request, "user", None)
+
+    def papel():
+        if not user or not user.is_authenticated:
+            return None
+        if user.is_superuser or getattr(user, "role", None) == "SUPERADMIN":
+            return "SUPERADMIN"
+        return getattr(user, "role", None)
+
+    role = papel()
+
+    blocos = []
+
+    def adicionar(titulo, separator, itens, perfis):
+        if role in perfis:
+            blocos.append({"title": titulo, "separator": separator, "items": itens})
+
+    adicionar(
+        'Vendas',
+        False,
+        [
+            {
+                'title': 'Pedidos',
+                'icon': 'shopping_cart',
+                'link': reverse_lazy('admin:pedidos_pedido_changelist'),
+            },
+        ],
+        {'SUPERADMIN', 'GERENTE', 'VENDAS', 'COMPRAS'},
+    )
+
+    adicionar(
+        'Produtos',
+        True,
+        [
+            {
+                'title': 'Modelos',
+                'icon': 'checkroom',
+                'link': reverse_lazy('admin:produtos_modelo_changelist'),
+            },
+            {
+                'title': 'SKUs / Grade',
+                'icon': 'qr_code_2',
+                'link': reverse_lazy('admin:produtos_sku_changelist'),
+            },
+        ],
+        {'SUPERADMIN', 'GERENTE', 'VENDAS', 'COMPRAS'},
+    )
+
+    adicionar(
+        'Clientes',
+        True,
+        [
+            {
+                'title': 'Clientes',
+                'icon': 'people',
+                'link': reverse_lazy('admin:clientes_cliente_changelist'),
+            },
+        ],
+        {'SUPERADMIN', 'GERENTE', 'VENDAS'},
+    )
+
+    adicionar(
+        'Financeiro',
+        True,
+        [
+            {
+                'title': 'Caixa de Pedidos',
+                'icon': 'payments',
+                'link': reverse_lazy('admin:financeiro_contareceber_changelist'),
+            },
+            {
+                'title': 'Contas a Pagar',
+                'icon': 'request_quote',
+                'link': reverse_lazy('admin:financeiro_contapagar_changelist'),
+            },
+            {
+                'title': 'Caixa Diário',
+                'icon': 'account_balance_wallet',
+                'link': reverse_lazy('admin:financeiro_caixadiario_changelist'),
+            },
+            {
+                'title': 'Movimentações',
+                'icon': 'sync_alt',
+                'link': reverse_lazy('admin:financeiro_caixamovimentacao_changelist'),
+            },
+        ],
+        {'SUPERADMIN', 'GERENTE', 'FINANCEIRO'},
+    )
+
+    adicionar(
+        'Sistema',
+        True,
+        [
+            {
+                'title': 'Dados da Confecção',
+                'icon': 'storefront',
+                'link': reverse_lazy('admin:tenants_empresa_changelist'),
+            },
+            {
+                'title': 'Usuários',
+                'icon': 'group',
+                'link': reverse_lazy('admin:usuarios_usuario_changelist'),
+            },
+            {
+                'title': 'Grupos',
+                'icon': 'admin_panel_settings',
+                'link': reverse_lazy('admin:auth_group_changelist'),
+            },
+        ],
+        {'SUPERADMIN', 'GERENTE'},
+    )
+
+    return blocos
 
 
 # Django Unfold — Interface Administrativa

@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from apps.clientes.models import Cliente
+from apps.financeiro.services import criar_conta_receber_para_pedido
 from apps.pedidos.models import ItemPedido, Pedido
 from apps.pedidos.services import EstoqueInsuficiente, reservar_estoque
 from apps.produtos.models import Modelo, SKU
@@ -303,7 +304,8 @@ def catalogo_checkout(request, slug):
                 cliente_whatsapp=cliente.whatsapp,
                 total_itens=total_itens,
                 valor_total=valor_total,
-                status=Pedido.Status.PENDENTE,
+                status=Pedido.Status.AGUARDANDO_PAGAMENTO,
+                status_financeiro=Pedido.StatusFinanceiro.AGUARDANDO_PAGAMENTO,
                 aceite_lgpd=True,
                 ip_aceite=_get_client_ip(request),
                 data_aceite=timezone.now(),
@@ -315,6 +317,7 @@ def catalogo_checkout(request, slug):
                     for s, qtd, preco in itens_detalhados
                 ]
             )
+            criar_conta_receber_para_pedido(pedido)
     except EstoqueInsuficiente as exc:
         messages.error(
             request,

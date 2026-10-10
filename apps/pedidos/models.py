@@ -1,16 +1,40 @@
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
 class Pedido(models.Model):
     class Status(models.TextChoices):
-        PENDENTE = "PENDENTE", _("Pendente")
+        # Fluxo financeiro / inicial
+        AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO", _("Aguardando Pagamento")
+        PAGO_LIBERADO = "PAGO_LIBERADO", _("Pago / Liberado")
+        # Fluxo operacional (exige liberação financeira)
+        EM_PRODUCAO = "EM_PRODUCAO", _("Em Produção")
         EM_SEPARACAO = "EM_SEPARACAO", _("Em Separação")
-        FATURADO = "FATURADO", _("Faturado")
+        PRONTO_ENTREGA = "PRONTO_ENTREGA", _("Pronto p/ Entrega")
         ENVIADO = "ENVIADO", _("Enviado")
+        ENTREGUE = "ENTREGUE", _("Entregue")
         CONCLUIDO = "CONCLUIDO", _("Concluído")
+        CANCELADO = "CANCELADO", _("Cancelado")
+
+    class StatusFinanceiro(models.TextChoices):
+        AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO", _("Aguardando Pagamento")
+        PAGO_LIBERADO = "PAGO_LIBERADO", _("Pago / Liberado")
+        FATURADO_ATACADO = "FATURADO_ATACADO", _("Faturado Atacado")
+        CANCELADO = "CANCELADO", _("Cancelado")
+
+    # Etapas operacionais que só podem ser atingidas com a liberação financeira.
+    STATUS_BLOQUEADOS_FINANCEIRO = {
+        "EM_PRODUCAO",
+        "EM_SEPARACAO",
+        "PRONTO_ENTREGA",
+        "ENVIADO",
+        "ENTREGUE",
+        "CONCLUIDO",
+    }
+    STATUS_FINANCEIROS_LIBERADOS = {"PAGO_LIBERADO", "FATURADO_ATACADO"}
 
     empresa = models.ForeignKey(
         "tenants.Empresa",
@@ -37,9 +61,15 @@ class Pedido(models.Model):
     )
     status = models.CharField(
         _("Status"),
-        max_length=20,
+        max_length=30,
         choices=Status.choices,
-        default=Status.PENDENTE,
+        default=Status.AGUARDANDO_PAGAMENTO,
+    )
+    status_financeiro = models.CharField(
+        _("Status Financeiro"),
+        max_length=30,
+        choices=StatusFinanceiro.choices,
+        default=StatusFinanceiro.AGUARDANDO_PAGAMENTO,
     )
     aceite_lgpd = models.BooleanField(_("Aceite LGPD"), default=False)
     ip_aceite = models.GenericIPAddressField(
@@ -59,6 +89,41 @@ class Pedido(models.Model):
 
     def __str__(self):
         return f"Pedido #{self.pk} - {self.cliente_nome}"
+
+    @property
+    def liberado_financeiramente(self):
+        return self.status_financeiro in self.STATUS_FINANCEIROS_LIBERADOS
+
+    @property
+    def aguardando_liberacao_financeira(self):
+        return self.status_financeiro == self.StatusFinanceiro.AGUARDANDO_PAGAMENTO
+
+    def clean(self):
+        """Impede avanço operacional sem confirmação do pagamento.
+
+        Se houver uma Conta a Receber vinculada, considera-se liberado quando
+        ela estiver PAGA ou FATURADA/APROVADA.
+        """
+        liberado = self.liberado_financeiramente
+        if not liberado and self.pk:
+            conta_liberada = self.contas_receber.filter(
+                status__in=[
+                    "PAGO",
+                    "FATURADO_APROVADO",
+                ]
+            ).exists()
+            liberado = conta_liberada
+
+        if self.status in self.STATUS_BLOQUEADOS_FINANCEIRO and not liberado:
+            raise ValidationError(
+                {
+                    "status": _(
+                        "Pedido bloqueado financeiramente. Confirme o pagamento "
+                        "(Conta a Receber paga ou faturada) antes de avançar para "
+                        "produção, separação, entrega ou conclusão."
+                    )
+                }
+            )
 
 
 class ItemPedido(models.Model):

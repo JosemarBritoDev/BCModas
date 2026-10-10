@@ -6,11 +6,14 @@ preços de varejo e atacado.
 """
 
 import hashlib
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
+from apps.financeiro.models import CaixaDiario, ContaPagar, ContaReceber
 from apps.produtos.models import Modelo, SKU
 from apps.tenants.models import Empresa
 
@@ -236,6 +239,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING("Removendo modelos anteriores..."))
                 Modelo.objects.filter(empresa=empresa).delete()
             self._criar_produtos(empresa)
+            self._criar_financeiro(empresa)
 
         self._resumo(empresa)
 
@@ -296,6 +300,70 @@ class Command(BaseCommand):
     def _codigo_barras(modelo, cor_nome, tamanho):
         base = f"{modelo.pk}-{cor_nome}-{tamanho}"
         return hashlib.sha256(base.encode("utf-8")).hexdigest()[:12].upper()
+
+    def _criar_financeiro(self, empresa):
+        hoje = timezone.localdate()
+        contas_pagar = [
+            ("Malharia São Paulo", "MATERIA_PRIMA", "Compra de malha algodão", "3500.00", hoje + timedelta(days=5)),
+            ("Folha de Pagamento", "FOLHA_PAGAMENTO", "Folha da equipe de produção", "8200.00", hoje + timedelta(days=2)),
+            ("Enel Distribuição", "OPERACIONAL", "Energia elétrica da fábrica", "950.00", hoje - timedelta(days=1)),
+            ("Receita Federal", "IMPOSTOS", "DAS Simples Nacional", "1200.00", hoje + timedelta(days=10)),
+        ]
+        for fornecedor, categoria, descricao, valor, vencimento in contas_pagar:
+            ContaPagar.objects.update_or_create(
+                empresa=empresa,
+                descricao=descricao,
+                defaults={
+                    "fornecedor": fornecedor,
+                    "categoria": categoria,
+                    "valor": Decimal(valor),
+                    "data_vencimento": vencimento,
+                    "status": ContaPagar.Status.PENDENTE,
+                },
+            )
+
+        contas_receber = [
+            {
+                "descricao": "Venda atacado - Lojista Centro",
+                "cliente_nome": "Lojista Centro",
+                "valor": Decimal("2100.00"),
+                "vencimento": hoje + timedelta(days=3),
+                "forma": ContaReceber.FormaPagamento.FATURADO_ATACADO,
+                "status": ContaReceber.Status.PENDENTE,
+            },
+            {
+                "descricao": "Venda balcão - Boutique Estação",
+                "cliente_nome": "Boutique Estação",
+                "valor": Decimal("780.00"),
+                "vencimento": hoje - timedelta(days=2),
+                "forma": ContaReceber.FormaPagamento.PIX,
+                "status": ContaReceber.Status.PAGO,
+            },
+        ]
+        for dados in contas_receber:
+            ContaReceber.objects.update_or_create(
+                empresa=empresa,
+                descricao=dados["descricao"],
+                defaults={
+                    "origem": ContaReceber.Origem.EXTERNA,
+                    "cliente_nome": dados["cliente_nome"],
+                    "valor": dados["valor"],
+                    "data_vencimento": dados["vencimento"],
+                    "data_recebimento": hoje if dados["status"] == ContaReceber.Status.PAGO else None,
+                    "forma_pagamento": dados["forma"],
+                    "status": dados["status"],
+                },
+            )
+
+        CaixaDiario.objects.update_or_create(
+            empresa=empresa,
+            data=hoje,
+            defaults={"saldo_inicial": Decimal("500.00")},
+        )
+        self.stdout.write(
+            f"    · Financeiro: {len(contas_pagar)} conta(s) a pagar e "
+            f"{len(contas_receber)} conta(s) a receber"
+        )
 
     def _resumo(self, empresa):
         modelos = Modelo.objects.filter(empresa=empresa)

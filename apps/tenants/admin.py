@@ -1,20 +1,25 @@
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
+from apps.usuarios.mixins import PerfilAdminMixin
+
 from .models import Empresa
 
 
 @admin.register(Empresa)
-class EmpresaAdmin(ModelAdmin):
+class EmpresaAdmin(PerfilAdminMixin, ModelAdmin):
     """Gerenciamento da instância única da fábrica.
 
     O ERP é mono-empresa: existe apenas o registro da própria confecção.
     A listagem redireciona automaticamente para a edição desse registro.
     """
+
+    perfis_permitidos = ("SUPERADMIN", "GERENTE")
 
     list_display = ("nome_fantasia", "cnpj", "whatsapp_comercial", "status")
     search_fields = ("nome_fantasia", "slug", "cnpj", "email")
@@ -71,14 +76,18 @@ class EmpresaAdmin(ModelAdmin):
 
     # ---- Travas de segurança (RBAC) --------------------------------------
     def has_view_permission(self, request, obj=None):
-        return bool(request.user.is_authenticated)
+        return self._perfil_autorizado(request) and bool(request.user.is_authenticated)
 
     def has_change_permission(self, request, obj=None):
         """Somente GERENTE/SUPERADMIN editam dados cadastrais e LGPD."""
-        return bool(getattr(request.user, "is_gerente", False))
+        return self._perfil_autorizado(request) and bool(
+            getattr(request.user, "is_gerente", False)
+        )
 
     def has_add_permission(self, request):
         """Permite cadastrar a fábrica somente se ainda não existir nenhuma."""
+        if not self._perfil_autorizado(request):
+            return False
         if not getattr(request.user, "is_gerente", False):
             return False
         return not self.get_queryset(request).exists()
@@ -88,6 +97,8 @@ class EmpresaAdmin(ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         """Atalho direto para a edição da fábrica ou para o cadastro inicial."""
+        if not self._perfil_autorizado(request):
+            raise PermissionDenied
         qs = self.get_queryset(request)
         obj = (
             qs.filter(status=Empresa.Status.ATIVO).order_by("pk").first()
