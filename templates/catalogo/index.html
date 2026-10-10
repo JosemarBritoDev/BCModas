@@ -20,7 +20,7 @@
             <div class="relative flex-1 sm:max-w-md">
                 <svg class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
                 <input type="search" id="busca" placeholder="Buscar por modelo ou marca..."
-                       class="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                       class="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
                        aria-label="Buscar no catálogo">
             </div>
             <p class="text-sm text-slate-500"><span id="contagem">{{ catalogo_itens|length }}</span> modelo(s)</p>
@@ -51,7 +51,7 @@
                         {% if item.fotos|length > 1 %}
                             <div class="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto p-2 no-scrollbar">
                                 {% for foto in item.fotos %}
-                                    <button type="button" class="thumb h-9 w-9 flex-none overflow-hidden rounded-lg border-2 {% if forloop.first %}border-brand{% else %}border-white/70{% endif %}" data-src="{{ foto }}" aria-label="Ver foto {{ forloop.counter }}">
+                                    <button type="button" class="thumb h-11 w-11 flex-none overflow-hidden rounded-lg border-2 {% if forloop.first %}border-brand{% else %}border-white/70{% endif %}" data-src="{{ foto }}" aria-label="Ver foto {{ forloop.counter }}">
                                         <img src="{{ foto }}" alt="" class="h-full w-full object-cover" loading="lazy">
                                     </button>
                                 {% endfor %}
@@ -72,10 +72,10 @@
                             {% endif %}
 
                             {% if item.cores %}
-                                <button type="button" class="escolher mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
-                                        data-produto="{{ item.modelo.pk }}">
-                                    Escolher grade
-                                </button>
+<button type="button" class="escolher mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+                                data-produto="{{ item.modelo.pk }}">
+                            Escolher grade
+                        </button>
                             {% else %}
                                 <p class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-center text-xs text-slate-400">Sem grade cadastrada</p>
                             {% endif %}
@@ -299,9 +299,9 @@
             var b = document.createElement('button');
             b.type = 'button';
             b.title = cor.nome;
-            b.className = 'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ' +
+            b.className = 'flex items-center gap-2 rounded-full border px-3.5 py-2.5 text-sm font-semibold transition ' +
                 (cor.nome === gradeState.cor ? 'border-brand bg-brand/10 text-brand' : 'border-slate-200 text-slate-600 hover:border-slate-300');
-            b.innerHTML = '<span class="swatch h-4 w-4 rounded-full" style="background:' + cor.hex + '"></span>' + cor.nome;
+            b.innerHTML = '<span class="swatch h-5 w-5 rounded-full" style="background:' + cor.hex + '"></span>' + cor.nome;
             b.addEventListener('click', function () {
                 gradeState.cor = cor.nome;
                 renderCores();
@@ -330,9 +330,9 @@
             var ctrl = document.createElement('div');
             ctrl.className = 'flex items-center gap-2';
             ctrl.innerHTML =
-                '<button type="button" class="menos h-8 w-8 rounded-lg border border-slate-200 text-lg font-bold text-slate-600 disabled:opacity-30">−</button>' +
-                '<span class="w-7 text-center font-bold">' + qtd + '</span>' +
-                '<button type="button" class="mais h-8 w-8 rounded-lg border border-slate-200 text-lg font-bold text-slate-600 disabled:opacity-30">+</button>';
+                '<button type="button" class="menos h-11 w-11 sm:h-9 sm:w-9 rounded-xl border border-slate-200 text-lg font-bold text-slate-600 disabled:opacity-30">−</button>' +
+                '<span class="w-8 text-center font-bold">' + qtd + '</span>' +
+                '<button type="button" class="mais h-11 w-11 sm:h-9 sm:w-9 rounded-xl border border-slate-200 text-lg font-bold text-slate-600 disabled:opacity-30">+</button>';
             var menos = ctrl.querySelector('.menos');
             var mais = ctrl.querySelector('.mais');
             if (esgotado) { menos.disabled = true; mais.disabled = true; }
@@ -417,13 +417,13 @@
                     '<p class="truncate text-sm font-semibold text-slate-800">' + l.nome + '</p>' +
                     '<p class="text-xs text-slate-400">' + l.cor + ' • ' + l.tamanho + '</p>' +
                     '<div class="mt-1.5 flex items-center gap-2">' +
-                        '<button type="button" class="menos h-7 w-7 rounded-md border border-slate-200 bg-white font-bold text-slate-600">−</button>' +
+                        '<button type="button" class="menos h-9 w-9 rounded-lg border border-slate-200 bg-white font-bold text-slate-600">−</button>' +
                         '<span class="w-6 text-center text-sm font-bold">' + l.qtd + '</span>' +
-                        '<button type="button" class="mais h-7 w-7 rounded-md border border-slate-200 bg-white font-bold text-slate-600">+</button>' +
+                        '<button type="button" class="mais h-9 w-9 rounded-lg border border-slate-200 bg-white font-bold text-slate-600">+</button>' +
                     '</div>' +
                 '</div>' +
                 '<div class="flex flex-col items-end justify-between">' +
-                    '<button type="button" class="remover text-slate-300 transition hover:text-red-500" aria-label="Remover">✕</button>' +
+                    '<button type="button" class="remover p-2 text-base text-slate-300 transition hover:text-red-500" aria-label="Remover">✕</button>' +
                     '<span class="text-sm font-bold text-slate-800">' + brl.format(subtotal) + '</span>' +
                     '<span class="text-[10px] text-slate-400">' + brl.format(preco) + '/peça</span>' +
                 '</div>';

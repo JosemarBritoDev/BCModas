@@ -1,31 +1,35 @@
 {% extends "admin/index.html" %}
 {% load i18n unfold %}
 
+{% block is_fullwidth %}1{% endblock %}
+
 {% block content %}
     {% if kpis %}
         <h2 class="font-semibold mb-3 text-font-important-light text-sm uppercase tracking-wide dark:text-font-important-dark">
             {% trans "Visão Geral" %}
         </h2>
 
-        <div class="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="erp-kpi-grid mb-6">
             {% for kpi in kpis %}
-                {% component "unfold/components/card.html" with title=kpi.title icon=kpi.icon %}
-                    <div class="flex flex-col gap-1">
-                        <span class="font-bold text-2xl text-font-important-light truncate dark:text-font-important-dark">
-                            {{ kpi.value }}
+                <div class="erp-kpi-card">
+                    <div class="erp-kpi-head">
+                        <span class="erp-kpi-title">{{ kpi.title }}</span>
+                        <span class="erp-kpi-icon">
+                            <span class="material-symbols-outlined">{{ kpi.icon }}</span>
                         </span>
+                    </div>
+                    <div class="erp-kpi-body">
+                        <span class="erp-kpi-value">{{ kpi.value }}</span>
                         {% if kpi.description %}
-                            <span class="text-font-subtle-light text-sm dark:text-font-subtle-dark">
-                                {{ kpi.description }}
-                            </span>
+                            <span class="erp-kpi-desc">{{ kpi.description }}</span>
                         {% endif %}
                     </div>
-                {% endcomponent %}
+                </div>
             {% endfor %}
         </div>
     {% endif %}
 
-    <div class="flex flex-col gap-5">
+    <div class="flex flex-col gap-5 erp-table-scroll">
         {% include "unfold/helpers/app_list_default.html" with show_changelinks=True %}
     </div>
 {% endblock %}

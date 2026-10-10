@@ -1,0 +1,176 @@
+/* ==========================================================================
+   ERP BC Modas — ajustes de responsividade e design (Unfold)
+   Desenvolvido por BritosCode Tecnologia | Josemar Brito
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Dashboard — grid de KPIs
+   grid-cols-1  ->  sm:grid-cols-2  ->  lg:grid-cols-4
+   (classes semânticas para não depender do CSS pré-compilado do Unfold)
+   -------------------------------------------------------------------------- */
+.erp-kpi-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .erp-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .erp-kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.erp-kpi-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1.25rem;
+    height: 100%;
+    min-height: 140px;
+    padding: 1.25rem;
+    border: 1px solid var(--color-base-200, #e5e7eb);
+    border-radius: var(--border-radius, 0.75rem);
+    background-color: var(--color-white, #ffffff);
+    box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.erp-kpi-card:hover {
+    box-shadow: 0 12px 26px -16px rgb(15 23 42 / 0.4);
+    transform: translateY(-2px);
+}
+
+html.dark .erp-kpi-card {
+    border-color: var(--color-base-800, #1e293b);
+    background-color: var(--color-base-900, #0f172a);
+}
+
+.erp-kpi-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.erp-kpi-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    color: var(--color-base-400, #9ca3af);
+}
+
+.erp-kpi-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    background-color: rgb(124 58 237 / 0.12);
+    color: var(--color-primary-600, #7c3aed);
+}
+
+.erp-kpi-icon .material-symbols-outlined {
+    font-size: 1.375rem;
+}
+
+html.dark .erp-kpi-icon {
+    background-color: rgb(255 255 255 / 0.06);
+}
+
+.erp-kpi-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.erp-kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 2rem;
+    color: var(--color-font-important-light, #0f172a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+html.dark .erp-kpi-value {
+    color: var(--color-font-important-dark, #f8fafc);
+}
+
+.erp-kpi-desc {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--color-font-subtle-light, #64748b);
+}
+
+html.dark .erp-kpi-desc {
+    color: var(--color-font-subtle-dark, #94a3b8);
+}
+
+/* --------------------------------------------------------------------------
+   Tabelas do ERP — rolagem horizontal confortável em telas pequenas
+   -------------------------------------------------------------------------- */
+.erp-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#changelist table#result_list {
+    min-width: 680px;
+}
+
+.erp-inline-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Cabeçalho de ações e botões com alvo de toque confortável no mobile */
+@media (max-width: 640px) {
+    .object-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .object-tools li a {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Link destacado "Alterar Senha" na edição de usuário
+   -------------------------------------------------------------------------- */
+.erp-password-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--border-radius, 0.5rem);
+    background-color: var(--color-primary-600, #7c3aed);
+    color: #ffffff;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.erp-password-link:hover {
+    background-color: var(--color-primary-700, #6d28d9);
+    color: #ffffff;
+}
+
+.erp-password-link .material-symbols-outlined {
+    font-size: 1.125rem;
+}

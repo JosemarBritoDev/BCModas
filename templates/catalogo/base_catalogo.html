@@ -32,6 +32,8 @@
     </script>
     <style>
         :root { --brand: {{ empresa.cor_primaria|default:'#111827' }}; }
+        html { -webkit-tap-highlight-color: transparent; }
+        button { touch-action: manipulation; }
         [x-cloak] { display: none !important; }
         .swatch { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .18); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
