@@ -1,65 +1,51 @@
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
-from .models import Empresa, Plano
-
-
-@admin.register(Plano)
-class PlanoAdmin(ModelAdmin):
-    list_display = ("nome", "preco_mensal", "limite_usuarios", "limite_produtos")
-    search_fields = ("nome",)
-    ordering = ("preco_mensal",)
-    readonly_fields = ("created_at", "updated_at")
-
-    def has_module_permission(self, request):
-        return self._is_superadmin(request)
-
-    def has_view_permission(self, request, obj=None):
-        return self._is_superadmin(request)
-
-    def has_add_permission(self, request):
-        return self._is_superadmin(request)
-
-    def has_delete_permission(self, request, obj=None):
-        return self._is_superadmin(request)
-
-    @staticmethod
-    def _is_superadmin(request):
-        return request.user.is_superuser or getattr(
-            request.user, "role", None
-        ) == "SUPERADMIN"
+from .models import Empresa
 
 
 @admin.register(Empresa)
 class EmpresaAdmin(ModelAdmin):
-    list_display = ("nome_fantasia", "slug", "cnpj", "plano", "status")
-    list_filter = ("status", "plano")
+    """Gerenciamento da instância única da fábrica.
+
+    O ERP é mono-empresa: existe apenas o registro da própria confecção.
+    A listagem redireciona automaticamente para a edição desse registro.
+    """
+
+    list_display = ("nome_fantasia", "cnpj", "whatsapp_comercial", "status")
     search_fields = ("nome_fantasia", "slug", "cnpj", "email")
     readonly_fields = ("created_at", "updated_at", "link_catalogo")
     fieldsets = (
-        (_("Dados da Empresa"), {
-            "fields": (
-                "nome_fantasia",
-                "slug",
-                "cnpj",
-                "email",
-                "whatsapp_comercial",
-                "instagram",
-                "endereco_origem",
-            )
-        }),
+        (
+            _("Dados da Fábrica"),
+            {
+                "fields": (
+                    "nome_fantasia",
+                    "slug",
+                    "cnpj",
+                    "email",
+                    "whatsapp_comercial",
+                    "instagram",
+                    "endereco_origem",
+                    "status",
+                )
+            },
+        ),
         (_("Identidade Visual"), {"fields": ("logo", "favicon", "cor_primaria")}),
-        (_("Catálogo Público"), {
-            "fields": ("link_catalogo",),
-            "description": _(
-                "Endereço público do catálogo white-label desta confecção."
-            ),
-        }),
-        (_("Assinatura"), {"fields": ("plano", "status")}),
-        (_("Documentos Legais"), {"fields": ("termos_uso", "politica_privacidade")}),
+        (
+            _("Catálogo Público"),
+            {
+                "fields": ("link_catalogo",),
+                "description": _(
+                    "Endereço público da vitrine da fábrica (atacado e varejo)."
+                ),
+            },
+        ),
+        (_("Termos LGPD"), {"fields": ("termos_uso", "politica_privacidade")}),
         (_("Auditoria"), {"fields": ("created_at", "updated_at")}),
     )
 
@@ -83,10 +69,26 @@ class EmpresaAdmin(ModelAdmin):
             return qs.none()
         return qs.filter(pk=empresa_id)
 
-    def get_readonly_fields(self, request, obj=None):
-        readonly = list(self.readonly_fields)
-        if not request.user.is_superuser and getattr(
-            request.user, "role", None
-        ) != "SUPERADMIN":
-            readonly += ["plano", "status", "cnpj"]
-        return readonly
+    def has_add_permission(self, request):
+        """Permite cadastrar a fábrica somente se ainda não existir nenhuma."""
+        if not super().has_add_permission(request):
+            return False
+        return not self.get_queryset(request).exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        """Atalho direto para a edição da fábrica ou para o cadastro inicial."""
+        qs = self.get_queryset(request)
+        obj = (
+            qs.filter(status=Empresa.Status.ATIVO).order_by("pk").first()
+            or qs.order_by("pk").first()
+        )
+        if obj is not None:
+            return HttpResponseRedirect(
+                reverse("admin:tenants_empresa_change", args=[obj.pk])
+            )
+        if self.has_add_permission(request):
+            return HttpResponseRedirect(reverse("admin:tenants_empresa_add"))
+        return super().changelist_view(request, extra_context)

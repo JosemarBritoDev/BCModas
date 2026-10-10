@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 
 from apps.tenants.mixins import EmpresaScopedAdminMixin
+from apps.tenants.models import Empresa
 
 from .models import ItemPedido, Pedido
 
@@ -26,9 +27,9 @@ class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
         "valor_total",
         "status",
         "aceite_lgpd",
-        "empresa",
         "created_at",
     )
+    list_display_links = ("id", "cliente_nome")
     list_filter = ("status", "aceite_lgpd")
     search_fields = ("cliente_nome", "cliente_documento", "cliente_whatsapp")
     readonly_fields = (
@@ -39,8 +40,14 @@ class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
         "updated_at",
     )
     fieldsets = (
-        (_("Cliente"), {"fields": ("cliente_nome", "cliente_documento", "cliente_whatsapp")}),
-        (_("Pedido"), {"fields": ("empresa", "total_itens", "valor_total", "status")}),
+        (
+            _("Cliente"),
+            {"fields": ("cliente_nome", "cliente_documento", "cliente_whatsapp")},
+        ),
+        (
+            _("Pedido"),
+            {"fields": ("total_itens", "valor_total", "status")},
+        ),
         (
             _("Consentimento LGPD"),
             {"fields": ("aceite_lgpd", "ip_aceite", "data_aceite", "versao_termos")},
@@ -48,8 +55,8 @@ class PedidoAdmin(EmpresaScopedAdminMixin, ModelAdmin):
         (_("Auditoria"), {"fields": ("created_at", "updated_at")}),
     )
 
-    def get_readonly_fields(self, request, obj=None):
-        readonly = list(self.readonly_fields)
-        if not request.user.is_superuser and getattr(request.user, "role", None) != "SUPERADMIN":
-            readonly.append("empresa")
-        return readonly
+    def save_model(self, request, obj, form, change):
+        """Atribui automaticamente a fábrica padrão ao cadastrar manualmente."""
+        if not obj.empresa_id:
+            obj.empresa = getattr(request.user, "empresa", None) or Empresa.obter_fabrica()
+        super().save_model(request, obj, form, change)

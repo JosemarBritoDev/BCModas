@@ -3,26 +3,8 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 
-class Plano(models.Model):
-    nome = models.CharField(_("Nome"), max_length=80, unique=True)
-    preco_mensal = models.DecimalField(
-        _("Preço Mensal"), max_digits=10, decimal_places=2
-    )
-    limite_usuarios = models.PositiveIntegerField(_("Limite de Usuários"))
-    limite_produtos = models.PositiveIntegerField(_("Limite de Produtos"))
-    created_at = models.DateTimeField(_("Criado em"), auto_now_add=True)
-    updated_at = models.DateTimeField(_("Atualizado em"), auto_now=True)
-
-    class Meta:
-        verbose_name = _("Plano")
-        verbose_name_plural = _("Planos")
-        ordering = ["preco_mensal"]
-
-    def __str__(self):
-        return self.nome
-
-
 class Empresa(models.Model):
+    """Dados da fábrica (instância única do ERP)."""
     class Status(models.TextChoices):
         ATIVO = "ATIVO", _("Ativo")
         SUSPENSO = "SUSPENSO", _("Suspenso")
@@ -57,12 +39,6 @@ class Empresa(models.Model):
         _("Instagram"), max_length=80, blank=True, default=""
     )
     endereco_origem = models.TextField(_("Endereço de Origem"), blank=True, default="")
-    plano = models.ForeignKey(
-        Plano,
-        verbose_name=_("Plano"),
-        on_delete=models.PROTECT,
-        related_name="empresas",
-    )
     status = models.CharField(
         _("Status"),
         max_length=20,
@@ -77,9 +53,14 @@ class Empresa(models.Model):
     updated_at = models.DateTimeField(_("Atualizado em"), auto_now=True)
 
     class Meta:
-        verbose_name = _("Empresa")
-        verbose_name_plural = _("Empresas")
+        verbose_name = _("Dados da Confecção")
+        verbose_name_plural = _("Dados da Confecção")
         ordering = ["nome_fantasia"]
+
+    @classmethod
+    def obter_fabrica(cls):
+        """Retorna a instância única da fábrica (a primeira ativa ou a primeira)."""
+        return cls.objects.filter(status=cls.Status.ATIVO).order_by("pk").first() or cls.objects.order_by("pk").first()
 
     def save(self, *args, **kwargs):
         if not self.slug:

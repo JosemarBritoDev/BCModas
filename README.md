@@ -1,16 +1,14 @@
-# BC Modas — SaaS de Gestão e E-commerce para Confecções
+# BC Modas — ERP da Fábrica e Catálogo B2B
 
 ## 📌 Visão Geral
 
-O **BC Modas** é uma plataforma **SaaS multi-tenant B2B** para a gestão de confecções de
-vestuário, unificando o **controle interno** (catálogo de peças, grade de SKUs, estoque e
-pedidos) com uma **frente de vendas para lojistas** (catálogo white-label com checkout via
-WhatsApp).
+O **BC Modas** é um **ERP mono-empresa** (uma única confecção) que unifica o
+**controle interno** (catálogo de peças, grade de SKUs, estoque e pedidos) com uma
+**frente de vendas para lojistas** (catálogo white-label com checkout via WhatsApp).
 
-Cada confecção contratada é um **Tenant (Empresa)** com isolamento estrito de dados:
-nenhum registro é acessível de uma empresa para outra. A plataforma é operada por um
-**SuperAdmin (BritosCode)** que controla planos, empresas e métricas globais de negócio
-(MRR, peças, pedidos).
+O sistema é a instância operacional da própria fábrica: não há múltiplos clientes
+nem planos de assinatura. O **SuperAdmin** e a equipe da confecção compartilham o
+mesmo painel, com dados protegidos pelo mesmo isolamento por `empresa`.
 
 > **Rodapé fixo obrigatório em todas as telas:**
 > `"Desenvolvido por BritosCode Tecnologia | Josemar Brito"`
@@ -28,12 +26,13 @@ nenhum registro é acessível de uma empresa para outra. A plataforma é operada
 | Banco (produção) | **PostgreSQL** (`psycopg2-binary`) |
 | Imagens | **Pillow** |
 | Servidor | **Gunicorn** |
-| Container | **Docker / Docker Compose** (previsto) |
+| Container | **Docker / Docker Compose** |
 | Python | 3.14 (venv local) |
 
 ### Princípios de engenharia
 
-1. **Multi-tenant por `empresa`** — todo queryset operacional é filtrado por
+1. **Empresa única** — os dados da fábrica vivem em `Empresa` e são acessados via
+   `Empresa.obter_fabrica()`; todo queryset operacional filtra por
    `empresa=request.user.empresa`.
 2. **RBAC** — perfis `SUPERADMIN`, `GERENTE`, `COMPRAS`, `VENDAS`, `FINANCEIRO`
    controlam acesso a módulos.
@@ -47,11 +46,11 @@ nenhum registro é acessível de uma empresa para outra. A plataforma é operada
 
 ```
 apps/
-├── tenants/      # Núcleo do SaaS: Plano, Empresa (dados da confecção) e mixins de isolamento
+├── tenants/      # Empresa (dados da confecção), identidade visual e catálogo
 ├── usuarios/     # Usuário (AbstractUser) + RBAC + comando create_initial_admin
 ├── produtos/     # Linha de vestuário: Modelo (6 fotos) e SKU (grade cor x tamanho)
 ├── pedidos/      # Pedido + ItemPedido + auditoria LGPD de aceite
-└── saas_admin/   # Callback do dashboard (KPIs) e futuras métricas globais
+└── saas_admin/   # Callback do dashboard (KPIs da fábrica)
 core/             # settings, urls, wsgi, asgi
 templates/admin/  # Template customizado do dashboard (cards de KPI)
 templates/catalogo/  # Catálogo público white-label (loja B2B + checkout WhatsApp)
@@ -59,11 +58,11 @@ templates/catalogo/  # Catálogo público white-label (loja B2B + checkout Whats
 
 | Módulo | Modelos principais | Responsabilidade |
 | --- | --- | --- |
-| `tenants` | `Plano`, `Empresa` | Assinaturas, cadastro da confecção, marca/identidade |
+| `tenants` | `Empresa` | Dados da confecção, identidade visual e catálogo |
 | `usuarios` | `Usuario` | Equipe, perfis de acesso, senha do SuperAdmin |
 | `produtos` | `Modelo`, `SKU` | Catálogo, matriz de grade, saldos de estoque |
 | `pedidos` | `Pedido`, `ItemPedido` | Vendas, status do fluxo e consentimento LGPD |
-| `saas_admin` | — | Dashboard, KPIs e monitoramento global |
+| `saas_admin` | — | Dashboard e KPIs da fábrica |
 
 ---
 
@@ -81,8 +80,8 @@ python manage.py makemigrations
 python manage.py migrate
 
 # 4. Dados iniciais
-python manage.py seed_planos              # cria os 3 planos padrão
 python manage.py create_initial_admin     # cria o superusuário josemar
+python manage.py populate_demo_data       # (opcional) catálogo de demonstração
 
 # 5. Servidor de desenvolvimento
 python manage.py runserver
@@ -94,8 +93,8 @@ Acesse **http://127.0.0.1:8000/admin/** com o usuário criado por `create_initia
 
 | Comando | Descrição |
 | --- | --- |
-| `python manage.py seed_planos` | Cria/atualiza os planos padrão (idempotente) |
 | `python manage.py create_initial_admin` | Cria/atualiza o SuperAdmin `josemar` (idempotente) |
+| `python manage.py populate_demo_data` | Popula dados de demonstração (idempotente) |
 | `python manage.py check` | Valida a configuração do projeto |
 | `python manage.py test` | Executa a suíte de testes |
 
@@ -106,47 +105,40 @@ Acesse **http://127.0.0.1:8000/admin/** com o usuário criado por `create_initia
 
 ## 📊 Painel (Django Unfold)
 
-- **Sidebar** agrupada por módulos: **Operação** (Modelos, SKUs, Pedidos),
-  **Gestão** (Dados da Confecção, Usuários, Grupos) e **SaaS Global**
-  (Empresas, Planos — visível apenas ao SuperAdmin).
+- **Sidebar** agrupada por módulos: **Vendas** (Pedidos), **Produtos** (Modelos,
+  SKUs/Grade) e **Sistema** (Dados da Confecção, Usuários, Grupos).
+- O item **Dados da Confecção** leva direto ao formulário da fábrica (CNPJ, logo,
+  redes, WhatsApp e Termos LGPD) — a listagem redireciona automaticamente.
 - **Dashboard** com cards de KPI: Pedidos, Faturamento Acumulado, Modelos e
-  Empresas Ativas (filtrados por tenant para usuários não-superadmins).
-
-### Planos padrão
-
-| Plano | Preço mensal | Usuários | Produtos |
-| --- | --- | --- | --- |
-| Starter | R$ 97,00 | 1 | 50 |
-| Pro | R$ 197,00 | 5 | 300 |
-| Enterprise | R$ 497,00 | 999 | 99.999 |
+  Pedidos Pendentes.
 
 ---
 
 ## 🗺️ Histórico e Visão Futura
 
 ### Entregue
-- Modelagem multi-tenant (`tenants`, `usuarios`, `produtos`, `pedidos`).
+- ERP mono-empresa (`tenants`, `usuarios`, `produtos`, `pedidos`).
 - Admin Unfold com sidebar por módulos, RBAC e dashboard de KPIs.
 - Auditoria LGPD nos pedidos (IP, data/hora e versão dos termos).
 - **Catálogo público white-label** (`/catalogo/<slug>/`) com cores/logo da confecção,
-  grade Cor × Tamanho, aceite obrigatório dos termos e checkout convertido em
-  mensagem formatada para o WhatsApp (`wa.me`).
-- Comandos de carga inicial (`seed_planos`, `create_initial_admin`).
+  grade Cor × Tamanho, preços de **varejo e atacado** (por quantidade mínima), aceite
+  obrigatório dos termos e checkout convertido em mensagem formatada para o WhatsApp
+  (`wa.me`).
+- Comandos de carga inicial (`create_initial_admin`, `populate_demo_data`).
 - Documentação técnica (README e guia de uso `PASSO_A_PASSO.md`).
 
 ### Próximos passos
 - **Bot de Atendimento Inteligente** no WhatsApp: triagem automática de pedidos,
   resposta a dúvidas sobre grade/estoque e status de entrega.
-- Dashboard de métricas financeiras (MRR, ticket médio, curva ABC de peças).
+- Dashboard de métricas financeiras (ticket médio, curva ABC de peças).
 - Deploy em Docker Compose + PostgreSQL e pipeline CI/CD.
-- Validação de limites de plano no backend (bloqueio ao atingir usuários/produtos).
 
 ---
 
 ## 🛡️ Segurança e Compliance
 
-- **Isolamento de dados** entre empresas em todas as consultas operacionais.
-- **Status de assinatura** (`ATIVO`/`SUSPENSO`) como trava de negócio.
+- **Isolamento de dados** por `empresa` em todas as consultas operacionais.
+- **Status da fábrica** (`ATIVO`/`SUSPENSO`) como trava de negócio.
 - **LGPD**: consentimento auditável e imutável no pedido.
 - **RBAC**: permissões separadas para operação, compras, vendas e financeiro.
 

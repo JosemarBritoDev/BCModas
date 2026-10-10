@@ -12,10 +12,10 @@ class UsuarioAdmin(BaseUserAdmin, ModelAdmin):
     list_filter = ("role", "is_active", "is_staff", "empresa")
     search_fields = ("username", "email", "first_name", "last_name")
     fieldsets = BaseUserAdmin.fieldsets + (
-        (_("Vínculo SaaS"), {"fields": ("empresa", "role")}),
+        (_("Acesso à Fábrica"), {"fields": ("empresa", "role")}),
     )
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        (_("Vínculo SaaS"), {"fields": ("empresa", "role")}),
+        (_("Acesso à Fábrica"), {"fields": ("empresa", "role")}),
     )
 
     def get_queryset(self, request):

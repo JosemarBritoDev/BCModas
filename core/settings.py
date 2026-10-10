@@ -70,7 +70,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
-    # Suas Apps do SaaS
+    # Apps do ERP da fábrica
     'apps.tenants',
     'apps.usuarios',
     'apps.produtos',
@@ -187,16 +187,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
 
-def is_superadmin(request):
-    return request.user.is_superuser or getattr(request.user, 'role', None) == 'SUPERADMIN'
-
-
 def bc_modas_navigation(request):
-    """Navegação do sidebar. A seção 'SaaS Global' só existe para SuperAdmins."""
-    navigation = [
+    """Navegação do sidebar do ERP, organizada por blocos operacionais."""
+    return [
         {
-            'title': 'Operação',
+            'title': 'Vendas',
             'separator': False,
+            'items': [
+                {
+                    'title': 'Pedidos',
+                    'icon': 'shopping_cart',
+                    'link': reverse_lazy('admin:pedidos_pedido_changelist'),
+                },
+            ],
+        },
+        {
+            'title': 'Produtos',
+            'separator': True,
             'items': [
                 {
                     'title': 'Modelos',
@@ -208,15 +215,10 @@ def bc_modas_navigation(request):
                     'icon': 'qr_code_2',
                     'link': reverse_lazy('admin:produtos_sku_changelist'),
                 },
-                {
-                    'title': 'Pedidos',
-                    'icon': 'shopping_cart',
-                    'link': reverse_lazy('admin:pedidos_pedido_changelist'),
-                },
             ],
         },
         {
-            'title': 'Gestão',
+            'title': 'Sistema',
             'separator': True,
             'items': [
                 {
@@ -238,34 +240,12 @@ def bc_modas_navigation(request):
         },
     ]
 
-    if is_superadmin(request):
-        navigation.append(
-            {
-                'title': 'SaaS Global',
-                'separator': True,
-                'items': [
-                    {
-                        'title': 'Empresas',
-                        'icon': 'apartment',
-                        'link': reverse_lazy('admin:tenants_empresa_changelist'),
-                    },
-                    {
-                        'title': 'Planos',
-                        'icon': 'workspace_premium',
-                        'link': reverse_lazy('admin:tenants_plano_changelist'),
-                    },
-                ],
-            }
-        )
-
-    return navigation
-
 
 # Django Unfold — Interface Administrativa
 UNFOLD = {
-    'SITE_TITLE': 'BC Modas | Gestão SaaS',
+    'SITE_TITLE': 'BC Modas | ERP da Fábrica',
     'SITE_HEADER': 'BC Modas',
-    'SITE_SUBHEADER': 'Painel de Controle',
+    'SITE_SUBHEADER': 'ERP da Fábrica',
     'SITE_URL': '/',
     'ENVIRONMENT': ['BritosCode Tecnologia | Josemar Brito', 'primary'],
     'DASHBOARD_CALLBACK': 'apps.saas_admin.dashboard.dashboard_callback',

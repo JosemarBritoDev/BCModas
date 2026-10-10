@@ -1,12 +1,15 @@
 from decimal import Decimal
 
-from django.test import TestCase
+from django.contrib.admin.sites import AdminSite
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
+from apps.pedidos.admin import PedidoAdmin
 from apps.pedidos.models import Pedido
 from apps.pedidos.views import _formatar_numero_whatsapp
 from apps.produtos.models import Modelo, SKU
-from apps.tenants.models import Empresa, Plano
+from apps.tenants.models import Empresa
+from apps.usuarios.models import Usuario
 
 
 class FormatarNumeroWhatsappTests(TestCase):
@@ -26,13 +29,9 @@ class FormatarNumeroWhatsappTests(TestCase):
 
 class CatalogoFlowTests(TestCase):
     def setUp(self):
-        self.plano = Plano.objects.create(
-            nome="Pro", preco_mensal=100, limite_usuarios=5, limite_produtos=300
-        )
         self.empresa = Empresa.objects.create(
             nome_fantasia="Confecção Teste",
             cnpj="00.000.000/0001-00",
-            plano=self.plano,
             status=Empresa.Status.ATIVO,
             whatsapp_comercial="(11) 99999-9999",
             termos_uso="Termos v1",
@@ -164,13 +163,9 @@ class CatalogoFlowTests(TestCase):
         self.assertEqual(resp.status_code, 403)
 
     def test_isolamento_entre_empresas(self):
-        outro_plano = Plano.objects.create(
-            nome="Starter", preco_mensal=50, limite_usuarios=1, limite_produtos=10
-        )
         outra = Empresa.objects.create(
             nome_fantasia="Outra Confecção",
             cnpj="11.111.111/0001-11",
-            plano=outro_plano,
             status=Empresa.Status.ATIVO,
             whatsapp_comercial="(31) 91111-2222",
         )
@@ -199,3 +194,31 @@ class CatalogoFlowTests(TestCase):
         self.assertIsNotNone(pedido)
         self.assertEqual(pedido.itens.count(), 1)
         self.assertEqual(pedido.itens.first().sku, self.sku)
+
+
+class PedidoAdminTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nome_fantasia="Fábrica Admin",
+            cnpj="00.000.000/0001-77",
+            email="admin@fabrica.com.br",
+            whatsapp_comercial="(11) 90000-0000",
+            status=Empresa.Status.ATIVO,
+        )
+        self.admin = PedidoAdmin(Pedido, AdminSite())
+
+    def test_save_model_atribui_fabrica_padrao(self):
+        usuario = Usuario.objects.create_user(username="operador", password="SenhaForte123")
+        request = RequestFactory().post("/admin/pedidos/pedido/add/")
+        request.user = usuario
+
+        pedido = Pedido(cliente_nome="Lojista Manual", cliente_whatsapp="(11) 98888-0000")
+        self.admin.save_model(request, pedido, form=None, change=False)
+
+        self.assertEqual(pedido.empresa, self.empresa)
+        self.assertTrue(Pedido.objects.filter(pk=pedido.pk, empresa=self.empresa).exists())
+
+    def test_inline_de_itens_configurado(self):
+        self.assertIn("ItemPedidoInline", [inline.__name__ for inline in self.admin.inlines])
+        self.assertIn("id", self.admin.list_display_links)
+        self.assertIn("cliente_nome", self.admin.list_display_links)

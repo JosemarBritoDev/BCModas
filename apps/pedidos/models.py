@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -79,4 +81,6 @@ class ItemPedido(models.Model):
 
     @property
     def subtotal(self):
+        if self.quantidade is None or self.preco_unitario is None:
+            return Decimal("0.00")
         return self.quantidade * self.preco_unitario

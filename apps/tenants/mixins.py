@@ -2,10 +2,10 @@ from django.utils.translation import gettext_lazy as _
 
 
 class EmpresaScopedAdminMixin:
-    """Isola o admin por empresa (multi-tenant).
+    """Isola o admin por empresa.
 
     Superadmins enxergam todos os registros. Demais perfis enxergam
-    apenas os registros da própria empresa.
+    apenas os registros da própria fábrica.
     """
 
     empresa_lookup = "empresa"

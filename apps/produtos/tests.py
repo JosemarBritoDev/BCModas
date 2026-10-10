@@ -4,18 +4,13 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from apps.produtos.models import Modelo, SKU
-from apps.tenants.models import Empresa, Plano
+from apps.tenants.models import Empresa
 
 
 def criar_empresa(nome="Confecção Teste", cnpj="00.000.000/0001-00"):
-    plano, _ = Plano.objects.get_or_create(
-        nome="Teste",
-        defaults={"preco_mensal": 50, "limite_usuarios": 5, "limite_produtos": 500},
-    )
     return Empresa.objects.create(
         nome_fantasia=nome,
         cnpj=cnpj,
-        plano=plano,
         status=Empresa.Status.ATIVO,
         whatsapp_comercial="(11) 99999-9999",
     )

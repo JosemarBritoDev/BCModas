@@ -1,9 +1,8 @@
 # 📘 PASSO A PASSO — BC Modas
 
-Guia operacional completo do SaaS **BC Modas**, desde a visão do **SuperAdmin (BritosCode)**
-até a rotina de uma **confecção cliente**. Nele você aprende a configurar a plataforma,
-montar a linha de vestuário, operar a matriz de grade e entender o tratamento de dados
-pessoais (LGPD).
+Guia operacional completo do ERP **BC Modas**: configuração da fábrica, montagem da
+linha de vestuário, operação da matriz de grade, gestão de pedidos e tratamento de
+dados pessoais (LGPD).
 
 > **Rodapé fixo obrigatório em todas as telas:**
 > `"Desenvolvido por BritosCode Tecnologia | Josemar Brito"`
@@ -14,8 +13,8 @@ pessoais (LGPD).
 
 1. Ative o ambiente virtual: `source venv/bin/activate`
 2. Aplique as migrações: `python manage.py migrate`
-3. Cadastre os planos: `python manage.py seed_planos`
-4. Crie o SuperAdmin: `python manage.py create_initial_admin`
+3. Crie o SuperAdmin: `python manage.py create_initial_admin`
+4. (Opcional) Popule o catálogo de demonstração: `python manage.py populate_demo_data`
 5. Suba o servidor: `python manage.py runserver`
 6. Abra **http://127.0.0.1:8000/admin/** e faça login.
 
@@ -25,106 +24,68 @@ pessoais (LGPD).
 
 ---
 
-## 👑 Manual do SuperAdmin
+## 👑 Manual do Administrador
 
-O SuperAdmin administra a plataforma como um todo: planos, empresas (tenants),
-monitoramento global e métricas.
+O ERP é **mono-empresa**: existe apenas o registro da própria fábrica. O administrador
+cuida do cadastro da confecção, da equipe, do catálogo e dos pedidos.
 
-### 1. Criar e gerenciar Planos
+### 1. Cadastrar os Dados da Confecção (Empresa)
 
-Acesse **SaaS Global → Planos**.
+Acesse **Sistema → Dados da Confecção**. A listagem redireciona automaticamente para o
+formulário da fábrica.
 
-| Campo | Descrição |
-| --- | --- |
-| Nome | Identificação comercial (ex.: `Pro`) |
-| Preço Mensal | Valor da assinatura em reais |
-| Limite de Usuários | Máximo de contas naquela confecção |
-| Limite de Produtos | Máximo de modelos cadastrados |
-
-Os três planos padrão já são criados pelo comando `seed_planos`:
-
-| Plano | Mensalidade | Usuários | Produtos |
-| --- | --- | --- | --- |
-| Starter | R$ 97,00 | 1 | 50 |
-| Pro | R$ 197,00 | 5 | 300 |
-| Enterprise | R$ 497,00 | 999 | 99.999 |
-
-💡 O comando é **idempotente**: reexecutá-lo apenas atualiza os valores, sem duplicar
-registros. Para criar um plano novo, clique em **Adicionar**.
-
-### 2. Cadastrar uma Confecção (Empresa)
-
-Acesse **SaaS Global → Empresas → Adicionar**.
-
-**Dados da Empresa**
+**Dados da Fábrica**
 - Nome Fantasia, CNPJ (único), E-mail, WhatsApp Comercial, Instagram e Endereço de Origem.
+- **Slug do Catálogo**: gerado automaticamente a partir do nome fantasia (pode ser editado).
 
 **Identidade Visual** (usada no catálogo white-label)
-- Logo e Favicon.
+- Logo, Favicon e Cor Primária.
 
-**Assinatura**
-- **Plano**: escolha um dos planos cadastrados.
-- **Status**: `Ativo` ou `Suspenso`. Ao suspenser, a confecção perde o acesso de operação.
+**Catálogo Público**
+- Exibe o endereço `/catalogo/<slug>/` pronto para compartilhar com lojistas.
 
-**Documentos Legais**
-- **Termos de Uso** e **Política de Privacidade**. A versão/texto registrado aqui é a
-  referência exigida para o aceite de LGPD nos pedidos daquela empresa.
+**Termos LGPD**
+- **Termos de Uso** e **Política de Privacidade**. O texto registrado aqui é a referência
+  exigida para o aceite de LGPD nos pedidos.
 
-✅ Dica: cadastre a empresa antes de criar o usuário da confecção — o vínculo de
-`empresa` é o que garante o isolamento de dados.
+**Status**
+- `Ativo` ou `Suspenso`. Ao suspender, o catálogo público passa a responder **403**.
 
-### 3. Monitorar o SaaS
+✅ Só é possível cadastrar uma fábrica. Depois de criada, o botão de adicionar é
+desabilitado e a listagem sempre abre o cadastro existente.
 
-A **página inicial (Dashboard)** exibe cards de KPI:
+### 2. Cadastrar a Equipe (RBAC)
 
-| Card | O que mostra |
-| --- | --- |
-| Pedidos | Total de pedidos registrados |
-| Faturamento | Somatório de `valor_total` dos pedidos |
-| Modelos | Modelos no catálogo |
-| Empresas Ativas | Confecções com assinatura `Ativo` |
-
-O SuperAdmin enxerga as métricas **globais**. Usuários de uma confecção enxergam apenas
-as métricas da própria empresa. A seção **SaaS Global** (Empresas e Planos) só aparece
-no sidebar de superadmins.
-
----
-
-## 🏢 Manual da Confecção
-
-Tudo abaixo acontece dentro da área da empresa: o sistema já filtra os dados por
-`empresa`, então nenhuma confecção enxerga as informações da outra.
-
-### 1. Cadastrar a Equipe (RBAC)
-
-Acesse **Gestão → Usuários → Adicionar**.
+Acesse **Sistema → Usuários → Adicionar**.
 
 - Preencha **username, e-mail, nome completo** e defina uma senha.
-- **Empresa**: vínculo do usuário com a confecção (não deixe vazio para usuários internos).
+- **Empresa**: vínculo do usuário com a fábrica (não deixe vazio para usuários internos).
 - **Perfil de Acesso (`role`)**:
 
 | Perfil | Recomendado para |
 | --- | --- |
-| `SUPERADMIN` | Operadores da BritosCode (visão global) |
-| `GERENTE` | Dono/gerente da confecção (acesso geral) |
+| `SUPERADMIN` | Administração do ERP (visão geral) |
+| `GERENTE` | Dono/gerente da fábrica (acesso geral) |
 | `COMPRAS` | Equipe de produção e cadastro de peças |
 | `VENDAS` | Atendimento e criação de pedidos |
 | `FINANCEIRO` | Acompanhamento de valores e faturamento |
 
-💡 Use **Gestão → Grupos** para agrupar permissões padrão do Django e associá-las aos
+💡 Use **Sistema → Grupos** para agrupar permissões padrão do Django e associá-las aos
 perfis.
 
-### 2. Criar Modelos (a peça)
+### 3. Criar Modelos (a peça)
 
-Acesse **Operação → Modelos → Adicionar**.
+Acesse **Produtos → Modelos → Adicionar**.
 
 | Bloco | Campos |
 | --- | --- |
 | Identificação | Nome, Marca, Estampa/Logo |
-| Comercial | Preço de Tabela, **Visível no Catálogo** |
+| Comercial | Preço de Varejo, Preço de Atacado, Qtd. Mínima p/ Atacado, **Visível no Catálogo** |
 | Ficha Técnica | Composição, Gramatura, Descrição, **Tabela de Medidas (JSON)** |
 | Fotos | Foto 1 até Foto 6 (até 6 imagens por produto) |
 
+- **Preço de Atacado**: aplicado automaticamente quando a quantidade do item atinge a
+  **Qtd. Mínima p/ Atacado** (padrão 6).
 - **Visível no Catálogo**: desmarque para manter a peça interna (não exposta no catálogo
   de lojistas).
 - O campo **Tabela de Medidas** aceita um JSON com as medidas por tamanho, por exemplo:
@@ -138,7 +99,7 @@ Acesse **Operação → Modelos → Adicionar**.
 }
 ```
 
-### 3. Gerenciar a Matriz de SKUs (Cor x Tamanho)
+### 4. Gerenciar a Matriz de SKUs (Cor x Tamanho)
 
 Cada combinação de **cor** e **tamanho** é um SKU, com seu próprio saldo de estoque.
 
@@ -151,14 +112,14 @@ Cada combinação de **cor** e **tamanho** é um SKU, com seu próprio saldo de 
 Regras importantes:
 
 - A combinação `Modelo + Cor + Tamanho` é **única** — o sistema bloqueia duplicidade.
-- O campo `empresa` do SKU é copiado automaticamente do Modelo (proteção anti vazamento
-  entre tenants).
-- Para **atualização em lote de saldos**, abra **Operação → SKUs / Grade**, filtre por
+- O campo `empresa` do SKU é copiado automaticamente do Modelo (proteção contra
+  vazamento de dados).
+- Para **atualização em lote de saldos**, abra **Produtos → SKUs / Grade**, filtre por
   tamanho/cor e edite a coluna **Estoque** direto na listagem (alteração em lote).
 
-### 4. Gerenciar Pedidos
+### 5. Gerenciar Pedidos
 
-Acesse **Operação → Pedidos → Adicionar**.
+Acesse **Vendas → Pedidos → Adicionar**.
 
 **Cabeçalho do pedido**
 - Cliente: Nome, Documento, WhatsApp.
@@ -179,18 +140,19 @@ PENDENTE → EM_SEPARACAO → FATURADO → ENVIADO → CONCLUIDO
   **somente leitura** no admin: são gravados pela auditoria e não podem ser editados
   manualmente.
 
-### 5. Catálogo Público (White-Label)
+### 6. Catálogo Público (White-Label)
 
-Cada confecção tem um catálogo público em `/catalogo/<slug>/`, onde o `slug` é gerado
-automaticamente a partir do nome fantasia (pode ser editado em **SaaS Global →
-Empresas**). O administrador vê o endereço pronto no bloco **Catálogo Público** do
-cadastro da empresa.
+A fábrica tem um catálogo público em `/catalogo/<slug>/`, onde o `slug` é gerado
+automaticamente a partir do nome fantasia (editável em **Sistema → Dados da Confecção**).
+O administrador vê o endereço pronto no bloco **Catálogo Público**.
 
 - **White-label**: a página usa a **logo**, a **cor primária** e os contatos
-  (WhatsApp/Instagram) da confecção. Suspenda a empresa (`Status = Suspenso`) para
-  tirar o catálogo do ar — o acesso passa a responder **403**.
+  (WhatsApp/Instagram) da confecção. Mude o **Status** para `Suspenso` para tirar o
+  catálogo do ar — o acesso passa a responder **403**.
 - **Grade Cor × Tamanho**: o lojista informa a quantidade desejada por SKU; o estoque
   é exibido e validado no envio (pedidos acima do saldo são recusados).
+- **Preço de atacado**: ao atingir a quantidade mínima do modelo, o preço de atacado é
+  aplicado automaticamente.
 - **Aceite obrigatório**: sem marcar *Termos de Uso* e *Política de Privacidade* o
   checkout não é concluído.
 - **Checkout via WhatsApp**: ao finalizar, o sistema cria um `Pedido` (status
@@ -227,17 +189,16 @@ Esses campos refletem o item de regra do projeto:
    nenhum operador consegue alterá-los pela interface.
 2. **Campos nunca nulos por regra de negócio** — o backend deve gravá-los no momento da
    finalização do pedido; o consentimento não é editável depois de criado.
-3. **Auditoria por empresa** — o pedido pertence a um `empresa`, preservando o
-   rastreamento por tenant.
+3. **Auditoria por empresa** — o pedido pertence à fábrica, preservando o rastreamento.
 
 ### Boas práticas operacionais
 
 - 🚫 Não crie pedidos sem o aceite real do cliente.
-- 📄 Mantenha os textos de **Termos de Uso** e **Política de Privacidade** da empresa
-  sempre atualizados — é deles que nasce a `versao_termos`.
+- 📄 Mantenha os textos de **Termos de Uso** e **Política de Privacidade** sempre
+  atualizados — é deles que nasce a `versao_termos`.
 - 🧹 Não tente editar logs de aceite por scripts diretos no banco; preservar a
   integridade é requisito de compliance.
-- 🔐 Restrinha o perfil de acesso dos operadores (RBAC) para minimizar acessos.
+- 🔐 Restrinja o perfil de acesso dos operadores (RBAC) para minimizar acessos.
 
 ---
 
@@ -246,8 +207,7 @@ Esses campos refletem o item de regra do projeto:
 | Seção | URL |
 | --- | --- |
 | Dashboard | `/admin/` |
-| Planos | `/admin/tenants/plano/` |
-| Empresas | `/admin/tenants/empresa/` |
+| Dados da Confecção | `/admin/tenants/empresa/` |
 | Usuários | `/admin/usuarios/usuario/` |
 | Modelos | `/admin/produtos/modelo/` |
 | SKUs | `/admin/produtos/sku/` |
@@ -259,8 +219,6 @@ Esses campos refletem o item de regra do projeto:
 
 ## ⚠️ Limites e Melhorias em Andamento
 
-- **Limites de plano** (`limite_usuarios` / `limite_produtos`) já estão cadastrados, mas a
-  **trava automática de cadastro** no backend ainda será implementada.
 - A segmentação fina de permissões por `role` (além do isolamento por empresa e do
   controle de superadmin) será refinada por grupo de permissões.
 - O Bot de Atendimento no WhatsApp está no roadmap.

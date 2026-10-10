@@ -2,7 +2,6 @@ from django.db.models import Sum
 
 from apps.pedidos.models import Pedido
 from apps.produtos.models import Modelo
-from apps.tenants.models import Empresa
 
 SUPERADMIN_ROLE = "SUPERADMIN"
 
@@ -21,23 +20,20 @@ def dashboard_callback(request, context):
 
     pedidos_qs = Pedido.objects.all()
     modelos_qs = Modelo.objects.all()
-    empresas_qs = Empresa.objects.all()
 
     if not eh_global:
         empresa_id = getattr(request.user, "empresa_id", None)
         if empresa_id:
             pedidos_qs = pedidos_qs.filter(empresa_id=empresa_id)
             modelos_qs = modelos_qs.filter(empresa_id=empresa_id)
-            empresas_qs = empresas_qs.filter(pk=empresa_id)
         else:
             pedidos_qs = pedidos_qs.none()
             modelos_qs = modelos_qs.none()
-            empresas_qs = empresas_qs.none()
 
     total_pedidos = pedidos_qs.count()
     faturamento = pedidos_qs.aggregate(total=Sum("valor_total"))["total"] or 0
     total_modelos = modelos_qs.count()
-    empresas_ativas = empresas_qs.filter(status=Empresa.Status.ATIVO).count()
+    pedidos_pendentes = pedidos_qs.filter(status=Pedido.Status.PENDENTE).count()
 
     context["kpis"] = [
         {
@@ -55,14 +51,14 @@ def dashboard_callback(request, context):
         {
             "title": "Modelos",
             "value": total_modelos,
-            "description": "Modelos no catálogo",
+            "description": "Modelos no catálogo da fábrica",
             "icon": "checkroom",
         },
         {
-            "title": "Empresas Ativas",
-            "value": empresas_ativas,
-            "description": "Confecções com assinatura ativa",
-            "icon": "apartment",
+            "title": "Pedidos Pendentes",
+            "value": pedidos_pendentes,
+            "description": "Aguardando separação/faturamento",
+            "icon": "pending_actions",
         },
     ]
 

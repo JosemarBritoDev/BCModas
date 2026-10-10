@@ -8,12 +8,11 @@ preços de varejo e atacado.
 import hashlib
 from decimal import Decimal
 
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apps.produtos.models import Modelo, SKU
-from apps.tenants.models import Empresa, Plano
+from apps.tenants.models import Empresa
 
 TERMOS = (
     "Termos de Uso: pedidos sujeitos à confirmação de estoque e prazo de produção. "
@@ -231,9 +230,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.stdout.write("Garantindo planos padrão...")
-        call_command("seed_planos")
-
         with transaction.atomic():
             empresa = self._criar_empresa()
             if options["reset"]:
@@ -244,14 +240,6 @@ class Command(BaseCommand):
         self._resumo(empresa)
 
     def _criar_empresa(self):
-        plano, _ = Plano.objects.get_or_create(
-            nome="Enterprise",
-            defaults={
-                "preco_mensal": Decimal("499.90"),
-                "limite_usuarios": 50,
-                "limite_produtos": 100000,
-            },
-        )
         empresa, criada = Empresa.objects.update_or_create(
             cnpj=FABRICA["cnpj"],
             defaults={
@@ -262,7 +250,6 @@ class Command(BaseCommand):
                 "instagram": FABRICA["instagram"],
                 "cor_primaria": FABRICA["cor_primaria"],
                 "endereco_origem": FABRICA["endereco_origem"],
-                "plano": plano,
                 "status": Empresa.Status.ATIVO,
                 "termos_uso": TERMOS,
                 "politica_privacidade": PRIVACIDADE,
