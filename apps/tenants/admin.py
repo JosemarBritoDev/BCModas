@@ -69,9 +69,17 @@ class EmpresaAdmin(ModelAdmin):
             return qs.none()
         return qs.filter(pk=empresa_id)
 
+    # ---- Travas de segurança (RBAC) --------------------------------------
+    def has_view_permission(self, request, obj=None):
+        return bool(request.user.is_authenticated)
+
+    def has_change_permission(self, request, obj=None):
+        """Somente GERENTE/SUPERADMIN editam dados cadastrais e LGPD."""
+        return bool(getattr(request.user, "is_gerente", False))
+
     def has_add_permission(self, request):
         """Permite cadastrar a fábrica somente se ainda não existir nenhuma."""
-        if not super().has_add_permission(request):
+        if not getattr(request.user, "is_gerente", False):
             return False
         return not self.get_queryset(request).exists()
 

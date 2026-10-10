@@ -18,6 +18,14 @@ class Pedido(models.Model):
         on_delete=models.CASCADE,
         related_name="pedidos",
     )
+    cliente = models.ForeignKey(
+        "clientes.Cliente",
+        verbose_name=_("Cliente"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pedidos",
+    )
     cliente_nome = models.CharField(_("Nome do Cliente"), max_length=150)
     cliente_documento = models.CharField(
         _("Documento do Cliente"), max_length=20, blank=True, default=""

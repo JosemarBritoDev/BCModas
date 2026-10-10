@@ -19,6 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 
+from apps.clientes import views as clientes_views
 from apps.pedidos import views as pedidos_views
 
 urlpatterns = [
@@ -28,6 +29,21 @@ urlpatterns = [
         'catalogo/<slug:slug>/',
         pedidos_views.catalogo_publico,
         name='catalogo_publico',
+    ),
+    path(
+        'catalogo/<slug:slug>/login/',
+        clientes_views.catalogo_cliente_login,
+        name='catalogo_cliente_login',
+    ),
+    path(
+        'catalogo/<slug:slug>/cadastro/',
+        clientes_views.catalogo_cliente_cadastro,
+        name='catalogo_cliente_cadastro',
+    ),
+    path(
+        'catalogo/<slug:slug>/sair/',
+        clientes_views.catalogo_cliente_logout,
+        name='catalogo_cliente_logout',
     ),
     path(
         'catalogo/<slug:slug>/finalizar/',

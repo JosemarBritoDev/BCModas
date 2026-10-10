@@ -32,3 +32,11 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return self.get_full_name() or self.username
+
+    @property
+    def is_gerente(self):
+        """Perfis autorizados a editar itens/valores e dados cadastrais."""
+        return bool(
+            self.is_superuser
+            or self.role in {self.Role.GERENTE, self.Role.SUPERADMIN}
+        )

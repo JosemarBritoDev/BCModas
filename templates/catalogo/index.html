@@ -162,27 +162,35 @@
                         <strong id="cart-total" class="text-2xl font-extrabold text-slate-900">R$ 0,00</strong>
                     </div>
 
-                    <div class="mt-4 grid gap-2.5">
-                        <input type="text" name="cliente_nome" required autocomplete="name" placeholder="Nome completo *"
-                               class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20">
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <input type="text" name="cliente_documento" autocomplete="off" placeholder="CNPJ/CPF"
-                                   class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20">
-                            <input type="tel" name="cliente_whatsapp" required autocomplete="tel" placeholder="WhatsApp *"
-                                   class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20">
+                    {% if cliente_logado %}
+                        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-xs text-slate-600">
+                            <p class="font-semibold text-slate-800">Pedido em nome de {{ cliente_logado.nome_razao_social }}</p>
+                            <p class="mt-0.5">{{ cliente_logado.get_tipo_pessoa_display }}{% if cliente_logado.cpf_cnpj %} • {{ cliente_logado.cpf_cnpj }}{% endif %} • {{ cliente_logado.whatsapp }}</p>
+                            {% if cliente_logado.cidade %}
+                                <p class="mt-0.5">{{ cliente_logado.endereco }}{% if cliente_logado.numero %}, {{ cliente_logado.numero }}{% endif %} — {{ cliente_logado.bairro }}, {{ cliente_logado.cidade }}/{{ cliente_logado.estado }}</p>
+                            {% endif %}
                         </div>
-                    </div>
 
-                    <label class="mt-3 flex items-start gap-2.5 text-xs text-slate-500">
-                        <input type="checkbox" name="aceite_lgpd" required class="mt-0.5 h-4 w-4 flex-none accent-[var(--brand)]">
-                        <span>Li e aceito os <a href="#termos" class="font-semibold text-brand underline" data-close-cart>Termos de Uso</a> e a <a href="#privacidade" class="font-semibold text-brand underline" data-close-cart>Política de Privacidade</a>. *</span>
-                    </label>
+                        <label class="mt-3 flex items-start gap-2.5 text-xs text-slate-500">
+                            <input type="checkbox" name="aceite_lgpd" required class="mt-0.5 h-4 w-4 flex-none accent-[var(--brand)]">
+                            <span>Li e aceito os <a href="#termos" class="font-semibold text-brand underline" data-close-cart>Termos de Uso</a> e a <a href="#privacidade" class="font-semibold text-brand underline" data-close-cart>Política de Privacidade</a>. *</span>
+                        </label>
 
-                    <button type="submit" id="checkout-submit"
-                            class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3.5 font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40">
-                        Finalizar e enviar no WhatsApp
-                    </button>
-                    <p class="mt-2 text-center text-[11px] text-slate-400">Pedido registrado com aceite LGPD (IP, data/hora e versão dos termos).</p>
+                        <button type="submit" id="checkout-submit"
+                                class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3.5 font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40">
+                            Finalizar e enviar no WhatsApp
+                        </button>
+                        <p class="mt-2 text-center text-[11px] text-slate-400">Pedido registrado com aceite LGPD (IP, data/hora e versão dos termos).</p>
+                    {% else %}
+                        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-800">
+                            Identifique-se para finalizar. Seus dados cadastrais ficarão vinculados ao pedido.
+                        </div>
+                        <a href="{% url 'catalogo_cliente_login' empresa.slug %}?next={% url 'catalogo_publico' empresa.slug %}"
+                           class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3.5 font-bold text-white transition hover:brightness-95">
+                            Entrar ou cadastrar para finalizar
+                        </a>
+                        <p class="mt-2 text-center text-[11px] text-slate-400">Sua sacola é mantida neste navegador ao entrar.</p>
+                    {% endif %}
                 </div>
             </form>
         </aside>
@@ -205,11 +213,44 @@
 (function () {
     var CATALOGO = JSON.parse(document.getElementById('catalogo-data').textContent || '[]');
     var byId = {};
-    CATALOGO.forEach(function (p) { byId[p.id] = p; });
+    var skuIndex = {};
+    CATALOGO.forEach(function (p) {
+        byId[p.id] = p;
+        p.cores.forEach(function (c) {
+            c.skus.forEach(function (s) { skuIndex[s.id] = { p: p, cor: c, sku: s }; });
+        });
+    });
 
     var brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+    var CART_KEY = 'bcmodas_cart_{{ empresa.slug }}';
     var cart = [];
     var gradeState = { produto: null, cor: null, qtds: {} };
+
+    function salvarCarrinho() {
+        try {
+            localStorage.setItem(CART_KEY, JSON.stringify(cart.map(function (l) {
+                return { skuId: l.skuId, produtoId: l.produtoId, qtd: l.qtd };
+            })));
+        } catch (e) { /* armazenamento indisponível */ }
+    }
+
+    function carregarCarrinho() {
+        try {
+            var raw = localStorage.getItem(CART_KEY);
+            if (!raw) { return; }
+            JSON.parse(raw).forEach(function (item) {
+                var ref = skuIndex[item.skuId];
+                if (!ref) { return; }
+                var qtd = Math.min(ref.sku.estoque, Math.max(0, parseInt(item.qtd, 10) || 0));
+                if (qtd <= 0) { return; }
+                cart.push({
+                    skuId: ref.sku.id, produtoId: ref.p.id, nome: ref.p.nome, marca: ref.p.marca,
+                    cor: ref.cor.nome, corHex: ref.cor.hex, tamanho: ref.sku.tamanho,
+                    qtd: qtd, estoque: ref.sku.estoque
+                });
+            });
+        } catch (e) { cart = []; }
+    }
 
     function el(id) { return document.getElementById(id); }
     function precoUnitario(p, qtd) {
@@ -400,9 +441,11 @@
         el('cart-savings').textContent = brl.format(Math.max(0, varejoTotal - total));
         el('cart-count').textContent = count;
         el('fab-count').textContent = count;
-        el('checkout-submit').disabled = !temItens;
+        var submit = el('checkout-submit');
+        if (submit) { submit.disabled = !temItens; }
         el('cart-fab').classList.toggle('hidden', !temItens);
         el('cart-fab').classList.toggle('flex', temItens);
+        salvarCarrinho();
     }
 
     var drawer = el('cart-drawer');
@@ -461,6 +504,9 @@
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { fecharGrade(); fecharCarrinho(); }
     });
+
+    carregarCarrinho();
+    renderCart();
 })();
 </script>
 {% endblock %}

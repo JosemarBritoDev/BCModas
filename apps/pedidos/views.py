@@ -12,7 +12,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
+from apps.clientes.models import Cliente
 from apps.pedidos.models import ItemPedido, Pedido
+from apps.pedidos.services import EstoqueInsuficiente, reservar_estoque
 from apps.produtos.models import Modelo, SKU
 from apps.tenants.models import Empresa
 
@@ -28,6 +30,18 @@ def _only_digits(value):
     if not value:
         return ""
     return re.sub(r"\D", "", str(value))
+
+
+def _cliente_autenticado(request):
+    """Retorna o ``Cliente`` do catálogo autenticado na sessão, se houver."""
+    user = getattr(request, "user", None)
+    if user is not None and isinstance(user, Cliente):
+        return user
+    return None
+
+
+def _redirect_checkout(slug):
+    return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
 
 
 def _versao_termos_empresa(empresa):
@@ -195,6 +209,7 @@ def catalogo_publico(request, slug):
         "catalogo_json": catalogo_json,
         "tamanhos_ordenados": tamanhos_ordenados,
         "whatsapp_url": _url_whatsapp_empresa(empresa),
+        "cliente_logado": _cliente_autenticado(request),
     }
     return render(request, "catalogo/index.html", contexto)
 
@@ -206,22 +221,22 @@ def catalogo_checkout(request, slug):
     if empresa.status != Empresa.Status.ATIVO:
         raise Http404("Catálogo não disponível")
 
-    cliente_nome = (request.POST.get("cliente_nome") or "").strip()
-    cliente_documento = (request.POST.get("cliente_documento") or "").strip()
-    cliente_whatsapp = (request.POST.get("cliente_whatsapp") or "").strip()
+    cliente = _cliente_autenticado(request)
+    if cliente is None or cliente.empresa_id != empresa.pk:
+        messages.info(
+            request,
+            "Faça login ou cadastre-se para finalizar seu pedido.",
+        )
+        destino = reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout"
+        return redirect(
+            reverse("catalogo_cliente_login", kwargs={"slug": slug})
+            + f"?next={quote(destino)}"
+        )
+
     aceite = request.POST.get("aceite_lgpd") == "on"
-
-    if not cliente_nome:
-        messages.error(request, "Informe o nome do cliente.")
-        return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
-
-    if not cliente_whatsapp:
-        messages.error(request, "Informe o WhatsApp do cliente.")
-        return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
-
     if not aceite:
         messages.error(request, "É necessário aceitar os Termos de Uso e Política de Privacidade.")
-        return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
+        return _redirect_checkout(slug)
 
     sku_ids = []
     for key in request.POST.keys():
@@ -232,7 +247,7 @@ def catalogo_checkout(request, slug):
 
     if not sku_ids:
         messages.error(request, "Selecione pelo menos um item para finalizar o pedido.")
-        return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
+        return _redirect_checkout(slug)
 
     skus_selecionados = SKU.objects.select_related("modelo").filter(
         empresa=empresa,
@@ -243,6 +258,7 @@ def catalogo_checkout(request, slug):
     skus_map = {s.pk: s for s in skus_selecionados}
 
     itens_detalhados = []
+    itens_estoque = []
     total_itens = 0
     valor_total = Decimal("0")
 
@@ -262,40 +278,49 @@ def catalogo_checkout(request, slug):
                 request,
                 f"Quantidade indisponível para {s.modelo.nome} | {s.cor_nome} | {s.tamanho}. Estoque: {s.quantidade_estoque}",
             )
-            return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
+            return _redirect_checkout(slug)
         preco = s.modelo.preco_unitario_para(qtd)
         subtotal = preco * qtd
-        itens_detalhados.append((s, qtd, preco, subtotal))
+        itens_detalhados.append((s, qtd, preco))
+        itens_estoque.append((s.pk, qtd))
         total_itens += qtd
         valor_total += subtotal
 
     if not itens_detalhados:
         messages.error(request, "Nenhum item com quantidade válida foi selecionado.")
-        return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
+        return _redirect_checkout(slug)
 
     versao_termos = _versao_termos_empresa(empresa)
 
-    with transaction.atomic():
-        pedido = Pedido.objects.create(
-            empresa=empresa,
-            cliente_nome=cliente_nome,
-            cliente_documento=cliente_documento,
-            cliente_whatsapp=cliente_whatsapp,
-            total_itens=total_itens,
-            valor_total=valor_total,
-            status=Pedido.Status.PENDENTE,
-            aceite_lgpd=True,
-            ip_aceite=_get_client_ip(request),
-            data_aceite=timezone.now(),
-            versao_termos=versao_termos,
-        )
-        for s, qtd, preco, subtotal in itens_detalhados:
-            ItemPedido.objects.create(
-                pedido=pedido,
-                sku=s,
-                quantidade=qtd,
-                preco_unitario=preco,
+    try:
+        with transaction.atomic():
+            reservar_estoque(itens_estoque)
+            pedido = Pedido.objects.create(
+                empresa=empresa,
+                cliente=cliente,
+                cliente_nome=cliente.nome_razao_social,
+                cliente_documento=cliente.cpf_cnpj,
+                cliente_whatsapp=cliente.whatsapp,
+                total_itens=total_itens,
+                valor_total=valor_total,
+                status=Pedido.Status.PENDENTE,
+                aceite_lgpd=True,
+                ip_aceite=_get_client_ip(request),
+                data_aceite=timezone.now(),
+                versao_termos=versao_termos,
             )
+            ItemPedido.objects.bulk_create(
+                [
+                    ItemPedido(pedido=pedido, sku=s, quantidade=qtd, preco_unitario=preco)
+                    for s, qtd, preco in itens_detalhados
+                ]
+            )
+    except EstoqueInsuficiente as exc:
+        messages.error(
+            request,
+            f"Estoque insuficiente para {exc.sku}. Disponível: {exc.disponivel}.",
+        )
+        return _redirect_checkout(slug)
 
     _registrar_pedido_na_sessao(request, pedido.pk)
 

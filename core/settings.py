@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     # Apps do ERP da fábrica
     'apps.tenants',
     'apps.usuarios',
+    'apps.clientes',
     'apps.produtos',
     'apps.pedidos',
     'apps.saas_admin',
@@ -186,6 +187,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
+# Duas bases de usuários convivem: funcionários do ERP (ModelBackend) e
+# clientes do catálogo público (ClienteBackend).
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'apps.clientes.backends.ClienteBackend',
+]
+
 
 def bc_modas_navigation(request):
     """Navegação do sidebar do ERP, organizada por blocos operacionais."""
@@ -214,6 +222,17 @@ def bc_modas_navigation(request):
                     'title': 'SKUs / Grade',
                     'icon': 'qr_code_2',
                     'link': reverse_lazy('admin:produtos_sku_changelist'),
+                },
+            ],
+        },
+        {
+            'title': 'Clientes',
+            'separator': True,
+            'items': [
+                {
+                    'title': 'Clientes',
+                    'icon': 'people',
+                    'link': reverse_lazy('admin:clientes_cliente_changelist'),
                 },
             ],
         },
@@ -251,7 +270,7 @@ UNFOLD = {
     'DASHBOARD_CALLBACK': 'apps.saas_admin.dashboard.dashboard_callback',
     'SIDEBAR': {
         'show_search': True,
-        'show_all_applications': True,
+        'show_all_applications': False,
         'navigation': bc_modas_navigation,
     },
 }
