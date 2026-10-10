@@ -17,13 +17,30 @@ class SKUInline(TabularInline):
 @admin.register(Modelo)
 class ModeloAdmin(EmpresaScopedAdminMixin, ModelAdmin):
     inlines = [SKUInline]
-    list_display = ("nome", "marca", "preco_tabela", "visivel_catalogo", "empresa")
+    list_display = (
+        "nome",
+        "marca",
+        "preco_varejo",
+        "preco_atacado",
+        "qtd_minima_atacado",
+        "visivel_catalogo",
+        "empresa",
+    )
     list_filter = ("visivel_catalogo", "marca")
     search_fields = ("nome", "marca", "descricao")
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (_("Identificação"), {"fields": ("empresa", "nome", "marca", "estampa_logo")}),
-        (_("Comercial"), {"fields": ("preco_tabela", "visivel_catalogo")}),
+        (
+            _("Comercial"),
+            {
+                "fields": (
+                    ("preco_varejo", "preco_atacado"),
+                    "qtd_minima_atacado",
+                    "visivel_catalogo",
+                )
+            },
+        ),
         (
             _("Ficha Técnica"),
             {"fields": ("composicao", "gramatura", "descricao", "tabela_medidas_json")},

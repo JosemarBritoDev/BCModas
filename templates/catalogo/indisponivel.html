@@ -1,19 +1,18 @@
-{% extends "catalogo/base.html" %}
+{% extends "catalogo/base_catalogo.html" %}
 
 {% block title %}{{ empresa.nome_fantasia }} | Catálogo indisponível{% endblock %}
 
 {% block content %}
-    <section class="section">
-        <div style="padding:3rem 1.5rem;text-align:center;display:flex;flex-direction:column;gap:1rem;align-items:center;">
-            <div style="width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,0.2);border:1px solid rgba(254,202,202,0.6);font-size:2rem;">!</div>
-            <h1 class="section-title">Catálogo temporariamente indisponível</h1>
-            <p class="section-sub" style="max-width:640px;">
-                O catálogo de <strong>{{ empresa.nome_fantasia }}</strong> está suspenso no momento.
-                Entre em contato diretamente com a confecção para mais informações.
-            </p>
-            {% if whatsapp_url %}
-                <a class="pill" style="background:var(--primary);color:var(--primary-contrast);padding:0.85rem 1.8rem;border-radius:999px;font-weight:600;" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Falar no WhatsApp</a>
-            {% endif %}
-        </div>
-    </section>
+<section class="mx-auto w-full max-w-xl px-4 py-20 text-center">
+    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-red-200 bg-red-50 text-2xl font-extrabold text-red-500">!</div>
+    <h1 class="mt-5 text-2xl font-extrabold tracking-tight">Catálogo temporariamente indisponível</h1>
+    <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">
+        A vitrine de <strong>{{ empresa.nome_fantasia }}</strong> está suspensa no momento.
+        Entre em contato diretamente com a fábrica para mais informações.
+    </p>
+    {% if whatsapp_url %}
+        <a class="mt-6 inline-flex items-center justify-center rounded-xl bg-brand px-5 py-3 font-bold text-white transition hover:brightness-95"
+           href="{{ whatsapp_url }}" target="_blank" rel="noopener">Falar no WhatsApp</a>
+    {% endif %}
+</section>
 {% endblock %}

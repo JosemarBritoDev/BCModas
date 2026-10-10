@@ -90,6 +90,17 @@ def _montar_payload_whatsapp(empresa, pedido):
 
 
 @require_http_methods(["GET"])
+def catalogo_home(request):
+    """Redireciona a raiz para a vitrine da fábrica ativa (operação mono-empresa)."""
+    empresa = (
+        Empresa.objects.filter(status=Empresa.Status.ATIVO).order_by("pk").first()
+    )
+    if not empresa:
+        raise Http404("Nenhuma fábrica ativa configurada")
+    return redirect("catalogo_publico", slug=empresa.slug)
+
+
+@require_http_methods(["GET"])
 def catalogo_publico(request, slug):
     empresa = get_object_or_404(Empresa, slug=slug)
 
@@ -148,12 +159,40 @@ def catalogo_publico(request, slug):
                 "fotos": fotos,
                 "cores": cores,
                 "tamanhos": tamanhos,
+                "preco_varejo": modelo.preco_varejo,
+                "preco_atacado": modelo.preco_atacado if modelo.tem_atacado else None,
+                "qtd_minima_atacado": modelo.qtd_minima_atacado,
+            }
+        )
+
+    catalogo_json = []
+    for item in catalogo_itens:
+        modelo = item["modelo"]
+        cores_json = []
+        for cor in item["cores"]:
+            skus = [
+                {"id": cell.pk, "tamanho": cell.tamanho, "estoque": cell.quantidade_estoque}
+                for cell in cor["celulas"]
+                if cell is not None
+            ]
+            cores_json.append({"nome": cor["nome"], "hex": cor["hex"], "skus": skus})
+        catalogo_json.append(
+            {
+                "id": modelo.pk,
+                "nome": modelo.nome,
+                "marca": modelo.marca,
+                "fotos": item["fotos"],
+                "preco_varejo": float(modelo.preco_varejo),
+                "preco_atacado": float(modelo.preco_atacado) if modelo.tem_atacado else None,
+                "qtd_minima_atacado": modelo.qtd_minima_atacado,
+                "cores": cores_json,
             }
         )
 
     contexto = {
         "empresa": empresa,
         "catalogo_itens": catalogo_itens,
+        "catalogo_json": catalogo_json,
         "tamanhos_ordenados": tamanhos_ordenados,
         "whatsapp_url": _url_whatsapp_empresa(empresa),
     }
@@ -224,7 +263,7 @@ def catalogo_checkout(request, slug):
                 f"Quantidade indisponível para {s.modelo.nome} | {s.cor_nome} | {s.tamanho}. Estoque: {s.quantidade_estoque}",
             )
             return redirect(reverse("catalogo_publico", kwargs={"slug": slug}) + "#checkout")
-        preco = s.modelo.preco_tabela
+        preco = s.modelo.preco_unitario_para(qtd)
         subtotal = preco * qtd
         itens_detalhados.append((s, qtd, preco, subtotal))
         total_itens += qtd

@@ -23,6 +23,7 @@ from apps.pedidos import views as pedidos_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', pedidos_views.catalogo_home, name='catalogo_home'),
     path(
         'catalogo/<slug:slug>/',
         pedidos_views.catalogo_publico,

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -14,8 +16,23 @@ class Modelo(models.Model):
     estampa_logo = models.ImageField(
         _("Estampa/Logo"), upload_to="produtos/estampas/", blank=True, null=True
     )
-    preco_tabela = models.DecimalField(
-        _("Preço de Tabela"), max_digits=10, decimal_places=2
+    preco_varejo = models.DecimalField(
+        _("Preço Varejo"),
+        max_digits=10,
+        decimal_places=2,
+        help_text=_("Valor da peça avulsa (venda no varejo)."),
+    )
+    preco_atacado = models.DecimalField(
+        _("Preço Atacado"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text=_("Valor promocional por peça a partir da quantidade mínima de atacado."),
+    )
+    qtd_minima_atacado = models.PositiveIntegerField(
+        _("Qtd. Mínima Atacado"),
+        default=6,
+        help_text=_("Quantidade mínima do item para aplicar o preço de atacado."),
     )
     composicao = models.CharField(
         _("Composição"), max_length=150, blank=True, default=""
@@ -54,6 +71,23 @@ class Modelo(models.Model):
 
     def __str__(self):
         return f"{self.nome} ({self.marca})" if self.marca else self.nome
+
+    @property
+    def tem_atacado(self):
+        """Indica se o modelo possui preço de atacado configurado."""
+        return self.preco_atacado and self.preco_atacado > 0
+
+    def preco_unitario_para(self, quantidade):
+        """Retorna o preço unitário aplicável à quantidade informada.
+
+        Aplica o preço de atacado quando a quantidade atinge a quantidade
+        mínima configurada e existe um preço de atacado cadastrado. Caso
+        contrário, retorna o preço de varejo.
+        """
+        qtd = int(quantidade or 0)
+        if self.tem_atacado and qtd >= self.qtd_minima_atacado:
+            return self.preco_atacado
+        return self.preco_varejo
 
 
 class SKU(models.Model):

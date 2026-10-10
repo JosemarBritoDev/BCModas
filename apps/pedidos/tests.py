@@ -41,7 +41,7 @@ class CatalogoFlowTests(TestCase):
         self.modelo = Modelo.objects.create(
             empresa=self.empresa,
             nome="Camiseta Básica",
-            preco_tabela=Decimal("39.90"),
+            preco_varejo=Decimal("39.90"),
             visivel_catalogo=True,
         )
         self.sku = SKU.objects.create(
@@ -55,6 +55,14 @@ class CatalogoFlowTests(TestCase):
 
     def test_slug_gerado_automaticamente(self):
         self.assertEqual(self.empresa.slug, "confeccao-teste")
+
+    def test_raiz_redireciona_para_catalogo_da_fabrica(self):
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(
+            resp.headers["Location"],
+            reverse("catalogo_publico", kwargs={"slug": self.empresa.slug}),
+        )
 
     def test_get_catalogo(self):
         url = reverse("catalogo_publico", kwargs={"slug": self.empresa.slug})
@@ -167,7 +175,7 @@ class CatalogoFlowTests(TestCase):
             whatsapp_comercial="(31) 91111-2222",
         )
         outro_modelo = Modelo.objects.create(
-            empresa=outra, nome="Calça Alheia", preco_tabela=Decimal("99.90")
+            empresa=outra, nome="Calça Alheia", preco_varejo=Decimal("99.90")
         )
         outro_sku = SKU.objects.create(
             empresa=outra,

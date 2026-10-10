@@ -1,320 +1,466 @@
-{% extends "catalogo/base.html" %}
+{% extends "catalogo/base_catalogo.html" %}
+{% load l10n %}
 
-{% block extra_head %}
-<style>
-    .grid-modelos {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.75rem;
-        padding: 0 1.75rem 1.75rem;
-    }
-    .modelo-card {
-        background: radial-gradient(circle at top, rgba(255,255,255,0.04), transparent);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-    .modelo-header {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1.25rem 1.5rem 0;
-    }
-    .modelo-nome {
-        font-weight: 700;
-        font-size: 1.1rem;
-    }
-    .modelo-preco {
-        color: #a7f3d0;
-        font-weight: 600;
-    }
-    .modelo-fotos {
-        display: flex;
-        gap: 0.5rem;
-        padding: 1rem 1.5rem 0;
-        flex-wrap: wrap;
-    }
-    .foto-thumb {
-        width: 70px;
-        height: 70px;
-        border-radius: 10px;
-        object-fit: cover;
-        border: 1px solid var(--border);
-    }
-    .foto-principal {
-        width: calc(100% - 3rem);
-        margin: 1rem 1.5rem 0;
-        border-radius: 14px;
-        border: 1px solid var(--border);
-        aspect-ratio: 4/5;
-        object-fit: cover;
-    }
-    .modelo-info {
-        padding: 1rem 1.5rem 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-        color: var(--text-subtle);
-    }
-    .info-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-    .chip {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        padding: 0.35rem 0.8rem;
-        font-size: 0.9rem;
-    }
-    .grade {
-        padding: 1rem 1.5rem 1.5rem;
-        overflow-x: auto;
-    }
-    .grade-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 560px;
-    }
-    .grade-table th,
-    .grade-table td {
-        border: 1px solid var(--border);
-        padding: 0.6rem;
-        text-align: center;
-        font-size: 0.95rem;
-    }
-    .grade-table th {
-        background: rgba(255,255,255,0.02);
-        color: var(--text-subtle);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.8rem;
-    }
-    .swatch {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-    }
-    .swatch-dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        border: 1px solid rgba(255,255,255,0.5);
-    }
-    .qty-input {
-        width: 70px;
-        padding: 0.45rem 0.5rem;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: rgba(15,23,42,0.6);
-        color: var(--text);
-        text-align: center;
-    }
-    .qty-input:disabled {
-        opacity: 0.4;
-    }
-    .estoque {
-        font-size: 0.8rem;
-        color: var(--text-subtle);
-    }
-    .checkout-section {
-        padding: 1.5rem 1.75rem 2rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1rem;
-    }
-    .field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    .field label {
-        color: var(--text-subtle);
-    }
-    .field input,
-    .field textarea {
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        background: rgba(15,23,42,0.7);
-        color: var(--text);
-        padding: 0.7rem 0.9rem;
-        font-size: 1rem;
-    }
-    .field textarea {
-        min-height: 90px;
-        resize: vertical;
-    }
-    .checkbox {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        color: var(--text-subtle);
-    }
-    .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-    }
-    .btn {
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.25);
-        background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 30%, black));
-        color: var(--primary-contrast);
-        padding: 0.85rem 1.8rem;
-        font-weight: 600;
-        font-size: 1rem;
-    }
-    .btn-ghost {
-        background: transparent;
-        color: var(--text);
-    }
-    .legal {
-        padding: 0 1.75rem 1.75rem;
-        color: var(--text-subtle);
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    .legal h3 {
-        color: var(--text);
-        margin-bottom: 0.25rem;
-    }
-    @media (max-width: 640px) {
-        .grid-modelos {
-            grid-template-columns: 1fr;
-            padding: 0 1rem 1rem;
-        }
-        .checkout-section {
-            padding: 1.25rem 1rem 1.5rem;
-        }
-        .legal {
-            padding: 0 1rem 1.5rem;
-        }
-    }
-</style>
-{% endblock %}
+{% block title %}{{ empresa.nome_fantasia }} | Vitrine de Fábrica{% endblock %}
 
 {% block content %}
-    <section class="section">
-        <div class="section-header">
-            <h1 class="section-title">Catálogo {{ empresa.nome_fantasia }}</h1>
-            <p class="section-sub">Selecione as quantidades por modelo, cor e tamanho. Ao finalizar, o pedido será formatado e enviado ao WhatsApp da confecção.</p>
+    <section class="border-b border-slate-200 bg-white">
+        <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand">Fábrica • Atacado &amp; Varejo</p>
+            <h1 class="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{{ empresa.nome_fantasia }}</h1>
+            <p class="mt-3 max-w-2xl text-slate-500">
+                Selecione cor e tamanho, monte sua grade e finalize o pedido direto pelo WhatsApp.
+                Compras a partir de <strong class="text-slate-700">6 peças</strong> do mesmo item garantem o preço de atacado.
+            </p>
         </div>
-        <form method="post" action="{% url 'catalogo_checkout' empresa.slug %}" id="checkout">
-            {% csrf_token %}
-            <div class="grid-modelos">
-                {% for item in catalogo_itens %}
-                    <article class="modelo-card">
-                        <div class="modelo-header">
-                            <div>
-                                <div class="modelo-nome">{{ item.modelo.nome }}</div>
-                                {% if item.modelo.marca %}<div class="modelo-preco">{{ item.modelo.marca }}</div>{% endif %}
-                            </div>
-                            <div class="modelo-preco">R$ {{ item.modelo.preco_tabela|floatformat:2 }}</div>
-                        </div>
+    </section>
+
+    <div class="mx-auto w-full max-w-6xl px-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 py-6">
+            <div class="relative flex-1 sm:max-w-md">
+                <svg class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                <input type="search" id="busca" placeholder="Buscar por modelo ou marca..."
+                       class="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                       aria-label="Buscar no catálogo">
+            </div>
+            <p class="text-sm text-slate-500"><span id="contagem">{{ catalogo_itens|length }}</span> modelo(s)</p>
+        </div>
+    </div>
+
+    <div class="mx-auto w-full max-w-6xl px-4 pb-24">
+        <div class="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 lg:grid-cols-4" id="produtos">
+            {% for item in catalogo_itens %}
+                <article class="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
+                         data-nome="{{ item.modelo.nome|lower }}" data-marca="{{ item.modelo.marca|lower }}">
+                    <div class="card-media relative aspect-[4/5] overflow-hidden bg-slate-100">
                         {% if item.fotos %}
-                            <img class="foto-principal" src="{{ item.fotos.0 }}" alt="{{ item.modelo.nome }}">
-                            <div class="modelo-fotos">
-                                {% for foto in item.fotos|slice:'1:' %}
-                                    <img class="foto-thumb" src="{{ foto }}" alt="{{ item.modelo.nome }}">
+                            <img class="media-main h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" src="{{ item.fotos.0 }}" alt="{{ item.modelo.nome }}" loading="lazy">
+                        {% else %}
+                            <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-4xl font-extrabold text-slate-400">
+                                {{ item.modelo.nome|slice:":1"|upper }}
+                            </div>
+                        {% endif %}
+
+                        <div class="absolute left-2.5 top-2.5 flex flex-col items-start gap-1">
+                            {% if item.preco_atacado %}
+                                <span class="rounded-full bg-brand px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">Atacado {{ item.qtd_minima_atacado }}+</span>
+                            {% endif %}
+                            <span class="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 backdrop-blur">Varejo</span>
+                        </div>
+
+                        {% if item.fotos|length > 1 %}
+                            <div class="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto p-2 no-scrollbar">
+                                {% for foto in item.fotos %}
+                                    <button type="button" class="thumb h-9 w-9 flex-none overflow-hidden rounded-lg border-2 {% if forloop.first %}border-brand{% else %}border-white/70{% endif %}" data-src="{{ foto }}" aria-label="Ver foto {{ forloop.counter }}">
+                                        <img src="{{ foto }}" alt="" class="h-full w-full object-cover" loading="lazy">
+                                    </button>
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <div class="modelo-info">
-                            {% if item.modelo.composicao %}<div class="info-row"><span class="chip">Composição: {{ item.modelo.composicao }}</span>{% if item.modelo.gramatura %}<span class="chip">Gramatura: {{ item.modelo.gramatura }}</span>{% endif %}</div>{% endif %}
-                            {% if item.modelo.descricao %}<div>{{ item.modelo.descricao }}</div>{% endif %}
-                            {% if item.modelo.tabela_medidas_json %}
-                                <details>
-                                    <summary style="cursor:pointer;color:var(--text);">Tabela de medidas</summary>
-                                    <pre style="margin-top:0.75rem;background:rgba(15,23,42,0.8);border:1px solid var(--border);border-radius:12px;padding:0.75rem;overflow-x:auto;font-size:0.9rem;">{{ item.modelo.tabela_medidas_json|pprint }}</pre>
-                                </details>
+                    </div>
+
+                    <div class="flex flex-1 flex-col gap-2 p-3.5">
+                        {% if item.modelo.marca %}<p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ item.modelo.marca }}</p>{% endif %}
+                        <h2 class="text-sm font-semibold leading-snug text-slate-800 line-clamp-2">{{ item.modelo.nome }}</h2>
+
+                        <div class="mt-auto">
+                            {% if item.preco_atacado %}
+                                <p class="text-[11px] text-slate-400 line-through">Varejo R$ {{ item.preco_varejo|floatformat:2 }}</p>
+                                <p class="text-lg font-extrabold text-brand">R$ {{ item.preco_atacado|floatformat:2 }} <span class="text-[11px] font-semibold text-slate-400">/peça {{ item.qtd_minima_atacado }}+</span></p>
+                            {% else %}
+                                <p class="text-lg font-extrabold text-brand">R$ {{ item.preco_varejo|floatformat:2 }}</p>
+                            {% endif %}
+
+                            {% if item.cores %}
+                                <button type="button" class="escolher mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+                                        data-produto="{{ item.modelo.pk }}">
+                                    Escolher grade
+                                </button>
+                            {% else %}
+                                <p class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-center text-xs text-slate-400">Sem grade cadastrada</p>
                             {% endif %}
                         </div>
-                        {% if item.cores %}
-                            <div class="grade">
-                                <table class="grade-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Cor</th>
-                                            {% for t in item.tamanhos %}<th>{{ t }}</th>{% endfor %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for cor in item.cores %}
-                                            <tr>
-                                                <td>
-                                                    <span class="swatch">
-                                                        <span class="swatch-dot" style="background:{{ cor.hex }};"></span>
-                                                        <span>{{ cor.nome }}</span>
-                                                    </span>
-                                                </td>
-                                                {% for cell in cor.celulas %}
-                                                    <td>
-                                                        {% if cell %}
-                                                            <input class="qty-input" type="number" name="qty_{{ cell.pk }}" min="0" max="{{ cell.quantidade_estoque }}" value="0" placeholder="0">
-                                                            <div class="estoque">Est: {{ cell.quantidade_estoque }}</div>
-                                                        {% else %}
-                                                            <span class="estoque">—</span>
-                                                        {% endif %}
-                                                    </td>
-                                                {% endfor %}
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div style="padding:1rem 1.5rem 1.5rem;color:var(--text-subtle);">Nenhum SKU cadastrado para este modelo.</div>
-                        {% endif %}
-                    </article>
-                {% endfor %}
-            </div>
-            <div class="section-header">
-                <h2 class="section-title" id="checkout">Finalizar pedido</h2>
-                <p class="section-sub">Preencha seus dados para que a confecção entre em contato com você.</p>
-            </div>
-            <div class="checkout-section">
-                <div class="form-grid">
-                    <div class="field">
-                        <label for="cliente_nome">Nome completo *</label>
-                        <input type="text" id="cliente_nome" name="cliente_nome" required autocomplete="name">
                     </div>
-                    <div class="field">
-                        <label for="cliente_documento">CNPJ/CPF</label>
-                        <input type="text" id="cliente_documento" name="cliente_documento" autocomplete="off">
-                    </div>
-                    <div class="field">
-                        <label for="cliente_whatsapp">WhatsApp com DDD *</label>
-                        <input type="tel" id="cliente_whatsapp" name="cliente_whatsapp" placeholder="(xx) xxxxx-xxxx" required autocomplete="tel">
-                    </div>
-                </div>
-                <div class="checkbox">
-                    <input type="checkbox" id="aceite_lgpd" name="aceite_lgpd" required>
-                    <label for="aceite_lgpd">Li e aceito os <strong>Termos de Uso</strong> e a <strong>Política de Privacidade</strong> desta confecção. *</label>
-                </div>
-                <div class="actions">
-                    <button class="btn" type="submit">Gerar pedido no WhatsApp</button>
-                    <a class="btn btn-ghost" href="#top">Voltar ao topo</a>
-                </div>
-            </div>
-        </form>
-        <div class="legal">
-            <div>
-                <h3>Termos de Uso</h3>
-                <pre style="white-space:pre-wrap;background:rgba(15,23,42,0.7);border:1px solid var(--border);border-radius:12px;padding:1rem;max-height:320px;overflow:auto;">{{ empresa.termos_uso|default:"Termos de Uso não cadastrados pela confecção." }}</pre>
-            </div>
-            <div>
-                <h3>Política de Privacidade</h3>
-                <pre style="white-space:pre-wrap;background:rgba(15,23,42,0.7);border:1px solid var(--border);border-radius:12px;padding:1rem;max-height:320px;overflow:auto;">{{ empresa.politica_privacidade|default:"Política de Privacidade não cadastrada pela confecção." }}</pre>
-            </div>
+                </article>
+            {% empty %}
+                <p class="col-span-full py-10 text-center text-slate-400">Nenhum modelo disponível no momento.</p>
+            {% endfor %}
         </div>
+    </div>
+
+    <!-- Botão flutuante do carrinho -->
+    <button type="button" id="cart-fab"
+            class="fixed bottom-5 right-5 z-40 hidden items-center gap-2 rounded-full bg-brand px-5 py-3.5 font-bold text-white shadow-xl transition hover:brightness-95">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+        Ver sacola
+        <span id="fab-count" class="rounded-full bg-white/25 px-2 py-0.5 text-xs">0</span>
+    </button>
+
+    <!-- Modal de grade -->
+    <div id="grade-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-close-grade></div>
+        <div class="absolute inset-x-0 bottom-0 max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:inset-0 sm:m-auto sm:h-fit sm:max-w-lg sm:rounded-3xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p id="grade-marca" class="text-[11px] font-bold uppercase tracking-wide text-slate-400"></p>
+                    <h3 id="grade-titulo" class="text-lg font-bold leading-tight text-slate-900"></h3>
+                </div>
+                <button type="button" class="rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200" data-close-grade aria-label="Fechar">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div id="grade-precos" class="mt-3"></div>
+
+            <div class="mt-4">
+                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Cor</p>
+                <div id="grade-cores" class="flex flex-wrap gap-2.5"></div>
+            </div>
+
+            <div class="mt-5">
+                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Tamanhos &amp; quantidades</p>
+                <div id="grade-tamanhos" class="space-y-2"></div>
+            </div>
+
+            <button type="button" id="grade-add"
+                    class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3.5 font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40">
+                Adicionar à sacola
+            </button>
+        </div>
+    </div>
+
+    <!-- Gaveta do carrinho -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-close-cart></div>
+        <aside class="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl animate-drawer">
+            <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <div>
+                    <h2 class="text-lg font-bold">Sua sacola</h2>
+                    <p class="text-xs text-slate-400"><span id="cart-count">0</span> item(ns)</p>
+                </div>
+                <button type="button" class="rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200" data-close-cart aria-label="Fechar">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                </button>
+            </header>
+
+            <form method="post" action="{% url 'catalogo_checkout' empresa.slug %}" id="checkout-form" class="flex min-h-0 flex-1 flex-col">
+                {% csrf_token %}
+                <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                    <div id="cart-empty" class="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-sm text-slate-400">
+                        Sua sacola está vazia.<br>Escolha uma grade para começar.
+                    </div>
+                    <ul id="cart-list" class="hidden space-y-3"></ul>
+                </div>
+
+                <div class="border-t border-slate-200 px-5 py-4">
+                    <div class="flex items-center justify-between text-sm text-slate-500">
+                        <span>Economia no atacado</span>
+                        <span id="cart-savings" class="font-semibold text-emerald-600">R$ 0,00</span>
+                    </div>
+                    <div class="mt-1 flex items-end justify-between">
+                        <span class="font-semibold text-slate-700">Total</span>
+                        <strong id="cart-total" class="text-2xl font-extrabold text-slate-900">R$ 0,00</strong>
+                    </div>
+
+                    <div class="mt-4 grid gap-2.5">
+                        <input type="text" name="cliente_nome" required autocomplete="name" placeholder="Nome completo *"
+                               class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20">
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <input type="text" name="cliente_documento" autocomplete="off" placeholder="CNPJ/CPF"
+                                   class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20">
+                            <input type="tel" name="cliente_whatsapp" required autocomplete="tel" placeholder="WhatsApp *"
+                                   class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20">
+                        </div>
+                    </div>
+
+                    <label class="mt-3 flex items-start gap-2.5 text-xs text-slate-500">
+                        <input type="checkbox" name="aceite_lgpd" required class="mt-0.5 h-4 w-4 flex-none accent-[var(--brand)]">
+                        <span>Li e aceito os <a href="#termos" class="font-semibold text-brand underline" data-close-cart>Termos de Uso</a> e a <a href="#privacidade" class="font-semibold text-brand underline" data-close-cart>Política de Privacidade</a>. *</span>
+                    </label>
+
+                    <button type="submit" id="checkout-submit"
+                            class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3.5 font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40">
+                        Finalizar e enviar no WhatsApp
+                    </button>
+                    <p class="mt-2 text-center text-[11px] text-slate-400">Pedido registrado com aceite LGPD (IP, data/hora e versão dos termos).</p>
+                </div>
+            </form>
+        </aside>
+    </div>
+
+    <section id="termos" class="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-6">
+        <h2 class="mb-2 text-base font-bold">Termos de Uso</h2>
+        <div class="max-h-60 overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">{{ empresa.termos_uso|default:"Termos de Uso não cadastrados pela fábrica." }}</div>
     </section>
+    <section id="privacidade" class="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-10">
+        <h2 class="mb-2 text-base font-bold">Política de Privacidade</h2>
+        <div class="max-h-60 overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">{{ empresa.politica_privacidade|default:"Política de Privacidade não cadastrada pela fábrica." }}</div>
+    </section>
+
+    {{ catalogo_json|json_script:"catalogo-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var CATALOGO = JSON.parse(document.getElementById('catalogo-data').textContent || '[]');
+    var byId = {};
+    CATALOGO.forEach(function (p) { byId[p.id] = p; });
+
+    var brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+    var cart = [];
+    var gradeState = { produto: null, cor: null, qtds: {} };
+
+    function el(id) { return document.getElementById(id); }
+    function precoUnitario(p, qtd) {
+        if (p.preco_atacado && qtd >= p.qtd_minima_atacado) { return p.preco_atacado; }
+        return p.preco_varejo;
+    }
+
+    /* ---------- Modal de grade ---------- */
+    var modal = el('grade-modal');
+
+    function abrirGrade(produtoId) {
+        var p = byId[produtoId];
+        if (!p) { return; }
+        gradeState = { produto: p, cor: p.cores.length ? p.cores[0].nome : null, qtds: {} };
+        el('grade-marca').textContent = p.marca || '';
+        el('grade-titulo').textContent = p.nome;
+        renderPrecos();
+        renderCores();
+        renderTamanhos();
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function fecharGrade() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function renderPrecos() {
+        var p = gradeState.produto;
+        var html = '<p class="text-sm"><span class="font-semibold text-brand">' + brl.format(p.preco_varejo) + '</span> <span class="text-slate-400">varejo por peça</span></p>';
+        if (p.preco_atacado) {
+            html += '<p class="text-sm"><span class="font-semibold text-brand">' + brl.format(p.preco_atacado) + '</span> <span class="text-slate-400">atacado por peça a partir de ' + p.qtd_minima_atacado + ' un.</span></p>';
+        }
+        el('grade-precos').innerHTML = html;
+    }
+
+    function corAtual() {
+        return gradeState.produto.cores.filter(function (c) { return c.nome === gradeState.cor; })[0];
+    }
+
+    function renderCores() {
+        var wrap = el('grade-cores');
+        wrap.innerHTML = '';
+        gradeState.produto.cores.forEach(function (cor) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.title = cor.nome;
+            b.className = 'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ' +
+                (cor.nome === gradeState.cor ? 'border-brand bg-brand/10 text-brand' : 'border-slate-200 text-slate-600 hover:border-slate-300');
+            b.innerHTML = '<span class="swatch h-4 w-4 rounded-full" style="background:' + cor.hex + '"></span>' + cor.nome;
+            b.addEventListener('click', function () {
+                gradeState.cor = cor.nome;
+                renderCores();
+                renderTamanhos();
+            });
+            wrap.appendChild(b);
+        });
+    }
+
+    function renderTamanhos() {
+        var wrap = el('grade-tamanhos');
+        wrap.innerHTML = '';
+        var cor = corAtual();
+        if (!cor || !cor.skus.length) {
+            wrap.innerHTML = '<p class="text-sm text-slate-400">Sem tamanhos para esta cor.</p>';
+            return;
+        }
+        cor.skus.forEach(function (s) {
+            var qtd = gradeState.qtds[s.id] || 0;
+            var esgotado = s.estoque <= 0;
+            var row = document.createElement('div');
+            row.className = 'flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2';
+            row.innerHTML =
+                '<div><span class="font-semibold text-slate-800">' + s.tamanho + '</span>' +
+                '<span class="ml-2 text-xs text-slate-400">' + (esgotado ? 'esgotado' : s.estoque + ' em estoque') + '</span></div>';
+            var ctrl = document.createElement('div');
+            ctrl.className = 'flex items-center gap-2';
+            ctrl.innerHTML =
+                '<button type="button" class="menos h-8 w-8 rounded-lg border border-slate-200 text-lg font-bold text-slate-600 disabled:opacity-30">−</button>' +
+                '<span class="w-7 text-center font-bold">' + qtd + '</span>' +
+                '<button type="button" class="mais h-8 w-8 rounded-lg border border-slate-200 text-lg font-bold text-slate-600 disabled:opacity-30">+</button>';
+            var menos = ctrl.querySelector('.menos');
+            var mais = ctrl.querySelector('.mais');
+            if (esgotado) { menos.disabled = true; mais.disabled = true; }
+            menos.addEventListener('click', function () {
+                gradeState.qtds[s.id] = Math.max(0, (gradeState.qtds[s.id] || 0) - 1);
+                renderTamanhos();
+            });
+            mais.addEventListener('click', function () {
+                var atual = gradeState.qtds[s.id] || 0;
+                if (atual < s.estoque) { gradeState.qtds[s.id] = atual + 1; renderTamanhos(); }
+            });
+            row.appendChild(ctrl);
+            wrap.appendChild(row);
+        });
+    }
+
+    el('grade-add').addEventListener('click', function () {
+        var p = gradeState.produto;
+        var cor = corAtual();
+        var adicionou = false;
+        Object.keys(gradeState.qtds).forEach(function (skuId) {
+            var qtd = gradeState.qtds[skuId];
+            if (qtd <= 0) { return; }
+            var sku = cor.skus.filter(function (s) { return String(s.id) === String(skuId); })[0];
+            if (!sku) { return; }
+            adicionarAoCarrinho(p, cor, sku, qtd);
+            adicionou = true;
+        });
+        if (adicionou) {
+            gradeState.qtds = {};
+            fecharGrade();
+            abrirCarrinho();
+        } else {
+            abrirCarrinho();
+        }
+    });
+
+    document.querySelectorAll('[data-close-grade]').forEach(function (b) { b.addEventListener('click', fecharGrade); });
+
+    /* ---------- Carrinho ---------- */
+    function adicionarAoCarrinho(p, cor, sku, qtd) {
+        var existente = cart.filter(function (l) { return l.skuId === sku.id; })[0];
+        if (existente) {
+            existente.qtd = Math.min(sku.estoque, existente.qtd + qtd);
+        } else {
+            cart.push({ skuId: sku.id, produtoId: p.id, nome: p.nome, marca: p.marca, cor: cor.nome, corHex: cor.hex, tamanho: sku.tamanho, qtd: qtd, estoque: sku.estoque });
+        }
+        renderCart();
+    }
+
+    function removerLinha(skuId) {
+        cart = cart.filter(function (l) { return l.skuId !== skuId; });
+        renderCart();
+    }
+
+    function alterarLinha(skuId, delta) {
+        var linha = cart.filter(function (l) { return l.skuId === skuId; })[0];
+        if (!linha) { return; }
+        linha.qtd = Math.min(linha.estoque, Math.max(0, linha.qtd + delta));
+        if (linha.qtd <= 0) { removerLinha(skuId); } else { renderCart(); }
+    }
+
+    function renderCart() {
+        var list = el('cart-list');
+        var empty = el('cart-empty');
+        list.innerHTML = '';
+        var total = 0, varejoTotal = 0, count = 0;
+
+        cart.forEach(function (l) {
+            var p = byId[l.produtoId];
+            var preco = precoUnitario(p, l.qtd);
+            var subtotal = preco * l.qtd;
+            total += subtotal;
+            varejoTotal += p.preco_varejo * l.qtd;
+            count += l.qtd;
+
+            var li = document.createElement('li');
+            li.className = 'flex gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3';
+            li.innerHTML =
+                '<span class="swatch mt-0.5 h-9 w-9 flex-none rounded-lg" style="background:' + l.corHex + '"></span>' +
+                '<div class="min-w-0 flex-1">' +
+                    '<p class="truncate text-sm font-semibold text-slate-800">' + l.nome + '</p>' +
+                    '<p class="text-xs text-slate-400">' + l.cor + ' • ' + l.tamanho + '</p>' +
+                    '<div class="mt-1.5 flex items-center gap-2">' +
+                        '<button type="button" class="menos h-7 w-7 rounded-md border border-slate-200 bg-white font-bold text-slate-600">−</button>' +
+                        '<span class="w-6 text-center text-sm font-bold">' + l.qtd + '</span>' +
+                        '<button type="button" class="mais h-7 w-7 rounded-md border border-slate-200 bg-white font-bold text-slate-600">+</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="flex flex-col items-end justify-between">' +
+                    '<button type="button" class="remover text-slate-300 transition hover:text-red-500" aria-label="Remover">✕</button>' +
+                    '<span class="text-sm font-bold text-slate-800">' + brl.format(subtotal) + '</span>' +
+                    '<span class="text-[10px] text-slate-400">' + brl.format(preco) + '/peça</span>' +
+                '</div>';
+            li.querySelector('.menos').addEventListener('click', function () { alterarLinha(l.skuId, -1); });
+            li.querySelector('.mais').addEventListener('click', function () { alterarLinha(l.skuId, 1); });
+            li.querySelector('.remover').addEventListener('click', function () { removerLinha(l.skuId); });
+            list.appendChild(li);
+        });
+
+        var temItens = cart.length > 0;
+        empty.classList.toggle('hidden', temItens);
+        list.classList.toggle('hidden', !temItens);
+
+        el('cart-total').textContent = brl.format(total);
+        el('cart-savings').textContent = brl.format(Math.max(0, varejoTotal - total));
+        el('cart-count').textContent = count;
+        el('fab-count').textContent = count;
+        el('checkout-submit').disabled = !temItens;
+        el('cart-fab').classList.toggle('hidden', !temItens);
+        el('cart-fab').classList.toggle('flex', temItens);
+    }
+
+    var drawer = el('cart-drawer');
+    function abrirCarrinho() { drawer.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+    function fecharCarrinho() { drawer.classList.add('hidden'); document.body.style.overflow = ''; }
+    document.querySelectorAll('[data-close-cart]').forEach(function (b) { b.addEventListener('click', fecharCarrinho); });
+    el('cart-fab').addEventListener('click', abrirCarrinho);
+
+    /* ---------- Checkout ---------- */
+    el('checkout-form').addEventListener('submit', function (e) {
+        if (!cart.length) { e.preventDefault(); return; }
+        document.querySelectorAll('#checkout-form .hidden-item').forEach(function (i) { i.remove(); });
+        cart.forEach(function (l) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.className = 'hidden-item';
+            input.name = 'qty_' + l.skuId;
+            input.value = l.qtd;
+            e.target.appendChild(input);
+        });
+    });
+
+    /* ---------- Interações da vitrine ---------- */
+    document.querySelectorAll('.escolher').forEach(function (b) {
+        b.addEventListener('click', function () { abrirGrade(b.dataset.produto); });
+    });
+
+    document.querySelectorAll('.card-media').forEach(function (media) {
+        var main = media.querySelector ? media.querySelector('.media-main') : null;
+        var thumbs = media.querySelectorAll ? media.querySelectorAll('.thumb') : [];
+        if (!main || !thumbs.length) { return; }
+        thumbs.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                main.src = btn.dataset.src;
+                thumbs.forEach(function (t) { t.classList.remove('border-brand'); t.classList.add('border-white/70'); });
+                btn.classList.add('border-brand');
+                btn.classList.remove('border-white/70');
+            });
+        });
+    });
+
+    var busca = el('busca');
+    if (busca) {
+        busca.addEventListener('input', function () {
+            var q = busca.value.trim().toLowerCase();
+            var visiveis = 0;
+            document.querySelectorAll('#produtos article').forEach(function (card) {
+                var ok = !q || card.dataset.nome.indexOf(q) > -1 || card.dataset.marca.indexOf(q) > -1;
+                card.style.display = ok ? '' : 'none';
+                if (ok) { visiveis++; }
+            });
+            el('contagem').textContent = visiveis;
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { fecharGrade(); fecharCarrinho(); }
+    });
+})();
+</script>
 {% endblock %}
