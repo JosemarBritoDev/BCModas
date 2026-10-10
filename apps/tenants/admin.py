@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
@@ -33,14 +35,15 @@ class PlanoAdmin(ModelAdmin):
 
 @admin.register(Empresa)
 class EmpresaAdmin(ModelAdmin):
-    list_display = ("nome_fantasia", "cnpj", "plano", "status")
+    list_display = ("nome_fantasia", "slug", "cnpj", "plano", "status")
     list_filter = ("status", "plano")
-    search_fields = ("nome_fantasia", "cnpj", "email")
-    readonly_fields = ("created_at", "updated_at")
+    search_fields = ("nome_fantasia", "slug", "cnpj", "email")
+    readonly_fields = ("created_at", "updated_at", "link_catalogo")
     fieldsets = (
         (_("Dados da Empresa"), {
             "fields": (
                 "nome_fantasia",
+                "slug",
                 "cnpj",
                 "email",
                 "whatsapp_comercial",
@@ -48,11 +51,26 @@ class EmpresaAdmin(ModelAdmin):
                 "endereco_origem",
             )
         }),
-        (_("Identidade Visual"), {"fields": ("logo", "favicon")}),
+        (_("Identidade Visual"), {"fields": ("logo", "favicon", "cor_primaria")}),
+        (_("Catálogo Público"), {
+            "fields": ("link_catalogo",),
+            "description": _(
+                "Endereço público do catálogo white-label desta confecção."
+            ),
+        }),
         (_("Assinatura"), {"fields": ("plano", "status")}),
         (_("Documentos Legais"), {"fields": ("termos_uso", "politica_privacidade")}),
         (_("Auditoria"), {"fields": ("created_at", "updated_at")}),
     )
+
+    @admin.display(description=_("Catálogo Público"))
+    def link_catalogo(self, obj):
+        if not obj or not obj.slug:
+            return "—"
+        url = reverse("catalogo_publico", kwargs={"slug": obj.slug})
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">{}</a>', url, url
+        )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

@@ -1,0 +1,78 @@
+{% extends "catalogo/base.html" %}
+
+{% block extra_head %}
+<style>
+    .success {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+        padding: 3rem 1.5rem;
+    }
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(34, 197, 94, 0.25);
+        border: 1px solid rgba(187, 247, 208, 0.6);
+        font-size: 2rem;
+    }
+    .success-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    .success-sub {
+        color: var(--text-subtle);
+        max-width: 640px;
+    }
+    .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+    .btn {
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.25);
+        background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 30%, black));
+        color: var(--primary-contrast);
+        padding: 0.85rem 1.8rem;
+        font-weight: 600;
+    }
+    .btn-ghost {
+        background: transparent;
+        color: var(--text);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <section class="section">
+        <div class="success">
+            <div class="success-icon">✓</div>
+            <h1 class="success-title">Pedido #{% if pedido %}{{ pedido.pk }}{% endif %} preparado com sucesso!</h1>
+            <p class="success-sub">O pedido foi registrado com aceite LGPD, IP, data/hora e versão dos termos. Clique abaixo para enviá-lo ao WhatsApp da {{ empresa.nome_fantasia }} com todos os itens e dados do cliente.</p>
+            {% if wa_url %}
+                <div class="actions">
+                    <a class="btn" href="{{ wa_url }}" target="_blank" rel="noopener">Enviar pedido no WhatsApp</a>
+                    <a class="btn btn-ghost" href="{% url 'catalogo_publico' empresa.slug %}">Voltar ao catálogo</a>
+                </div>
+                <script>
+                    try {
+                        window.setTimeout(function() {
+                            window.open('{{ wa_url|escapejs }}', '_blank');
+                        }, 800);
+                    } catch (e) {}
+                </script>
+            {% else %}
+                <div class="actions">
+                    <a class="btn btn-ghost" href="{% url 'catalogo_publico' empresa.slug %}">Voltar ao catálogo</a>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

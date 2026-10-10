@@ -54,6 +54,7 @@ apps/
 └── saas_admin/   # Callback do dashboard (KPIs) e futuras métricas globais
 core/             # settings, urls, wsgi, asgi
 templates/admin/  # Template customizado do dashboard (cards de KPI)
+templates/catalogo/  # Catálogo público white-label (loja B2B + checkout WhatsApp)
 ```
 
 | Módulo | Modelos principais | Responsabilidade |
@@ -127,13 +128,15 @@ Acesse **http://127.0.0.1:8000/admin/** com o usuário criado por `create_initia
 - Modelagem multi-tenant (`tenants`, `usuarios`, `produtos`, `pedidos`).
 - Admin Unfold com sidebar por módulos, RBAC e dashboard de KPIs.
 - Auditoria LGPD nos pedidos (IP, data/hora e versão dos termos).
+- **Catálogo público white-label** (`/catalogo/<slug>/`) com cores/logo da confecção,
+  grade Cor × Tamanho, aceite obrigatório dos termos e checkout convertido em
+  mensagem formatada para o WhatsApp (`wa.me`).
 - Comandos de carga inicial (`seed_planos`, `create_initial_admin`).
 - Documentação técnica (README e guia de uso `PASSO_A_PASSO.md`).
 
 ### Próximos passos
 - **Bot de Atendimento Inteligente** no WhatsApp: triagem automática de pedidos,
   resposta a dúvidas sobre grade/estoque e status de entrega.
-- Loja pública white-label com carrinho e conversão de checkout via link `wa.me`.
 - Dashboard de métricas financeiras (MRR, ticket médio, curva ABC de peças).
 - Deploy em Docker Compose + PostgreSQL e pipeline CI/CD.
 - Validação de limites de plano no backend (bloqueio ao atingir usuários/produtos).

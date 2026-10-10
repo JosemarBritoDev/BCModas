@@ -1,0 +1,320 @@
+{% extends "catalogo/base.html" %}
+
+{% block extra_head %}
+<style>
+    .grid-modelos {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.75rem;
+        padding: 0 1.75rem 1.75rem;
+    }
+    .modelo-card {
+        background: radial-gradient(circle at top, rgba(255,255,255,0.04), transparent);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .modelo-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem 0;
+    }
+    .modelo-nome {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    .modelo-preco {
+        color: #a7f3d0;
+        font-weight: 600;
+    }
+    .modelo-fotos {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem 1.5rem 0;
+        flex-wrap: wrap;
+    }
+    .foto-thumb {
+        width: 70px;
+        height: 70px;
+        border-radius: 10px;
+        object-fit: cover;
+        border: 1px solid var(--border);
+    }
+    .foto-principal {
+        width: calc(100% - 3rem);
+        margin: 1rem 1.5rem 0;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        aspect-ratio: 4/5;
+        object-fit: cover;
+    }
+    .modelo-info {
+        padding: 1rem 1.5rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        color: var(--text-subtle);
+    }
+    .info-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .chip {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.35rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    .grade {
+        padding: 1rem 1.5rem 1.5rem;
+        overflow-x: auto;
+    }
+    .grade-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 560px;
+    }
+    .grade-table th,
+    .grade-table td {
+        border: 1px solid var(--border);
+        padding: 0.6rem;
+        text-align: center;
+        font-size: 0.95rem;
+    }
+    .grade-table th {
+        background: rgba(255,255,255,0.02);
+        color: var(--text-subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.8rem;
+    }
+    .swatch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .swatch-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+    .qty-input {
+        width: 70px;
+        padding: 0.45rem 0.5rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(15,23,42,0.6);
+        color: var(--text);
+        text-align: center;
+    }
+    .qty-input:disabled {
+        opacity: 0.4;
+    }
+    .estoque {
+        font-size: 0.8rem;
+        color: var(--text-subtle);
+    }
+    .checkout-section {
+        padding: 1.5rem 1.75rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+    }
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .field label {
+        color: var(--text-subtle);
+    }
+    .field input,
+    .field textarea {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(15,23,42,0.7);
+        color: var(--text);
+        padding: 0.7rem 0.9rem;
+        font-size: 1rem;
+    }
+    .field textarea {
+        min-height: 90px;
+        resize: vertical;
+    }
+    .checkbox {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        color: var(--text-subtle);
+    }
+    .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    .btn {
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.25);
+        background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 30%, black));
+        color: var(--primary-contrast);
+        padding: 0.85rem 1.8rem;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .btn-ghost {
+        background: transparent;
+        color: var(--text);
+    }
+    .legal {
+        padding: 0 1.75rem 1.75rem;
+        color: var(--text-subtle);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .legal h3 {
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+    @media (max-width: 640px) {
+        .grid-modelos {
+            grid-template-columns: 1fr;
+            padding: 0 1rem 1rem;
+        }
+        .checkout-section {
+            padding: 1.25rem 1rem 1.5rem;
+        }
+        .legal {
+            padding: 0 1rem 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <section class="section">
+        <div class="section-header">
+            <h1 class="section-title">Catálogo {{ empresa.nome_fantasia }}</h1>
+            <p class="section-sub">Selecione as quantidades por modelo, cor e tamanho. Ao finalizar, o pedido será formatado e enviado ao WhatsApp da confecção.</p>
+        </div>
+        <form method="post" action="{% url 'catalogo_checkout' empresa.slug %}" id="checkout">
+            {% csrf_token %}
+            <div class="grid-modelos">
+                {% for item in catalogo_itens %}
+                    <article class="modelo-card">
+                        <div class="modelo-header">
+                            <div>
+                                <div class="modelo-nome">{{ item.modelo.nome }}</div>
+                                {% if item.modelo.marca %}<div class="modelo-preco">{{ item.modelo.marca }}</div>{% endif %}
+                            </div>
+                            <div class="modelo-preco">R$ {{ item.modelo.preco_tabela|floatformat:2 }}</div>
+                        </div>
+                        {% if item.fotos %}
+                            <img class="foto-principal" src="{{ item.fotos.0 }}" alt="{{ item.modelo.nome }}">
+                            <div class="modelo-fotos">
+                                {% for foto in item.fotos|slice:'1:' %}
+                                    <img class="foto-thumb" src="{{ foto }}" alt="{{ item.modelo.nome }}">
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="modelo-info">
+                            {% if item.modelo.composicao %}<div class="info-row"><span class="chip">Composição: {{ item.modelo.composicao }}</span>{% if item.modelo.gramatura %}<span class="chip">Gramatura: {{ item.modelo.gramatura }}</span>{% endif %}</div>{% endif %}
+                            {% if item.modelo.descricao %}<div>{{ item.modelo.descricao }}</div>{% endif %}
+                            {% if item.modelo.tabela_medidas_json %}
+                                <details>
+                                    <summary style="cursor:pointer;color:var(--text);">Tabela de medidas</summary>
+                                    <pre style="margin-top:0.75rem;background:rgba(15,23,42,0.8);border:1px solid var(--border);border-radius:12px;padding:0.75rem;overflow-x:auto;font-size:0.9rem;">{{ item.modelo.tabela_medidas_json|pprint }}</pre>
+                                </details>
+                            {% endif %}
+                        </div>
+                        {% if item.cores %}
+                            <div class="grade">
+                                <table class="grade-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Cor</th>
+                                            {% for t in item.tamanhos %}<th>{{ t }}</th>{% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cor in item.cores %}
+                                            <tr>
+                                                <td>
+                                                    <span class="swatch">
+                                                        <span class="swatch-dot" style="background:{{ cor.hex }};"></span>
+                                                        <span>{{ cor.nome }}</span>
+                                                    </span>
+                                                </td>
+                                                {% for cell in cor.celulas %}
+                                                    <td>
+                                                        {% if cell %}
+                                                            <input class="qty-input" type="number" name="qty_{{ cell.pk }}" min="0" max="{{ cell.quantidade_estoque }}" value="0" placeholder="0">
+                                                            <div class="estoque">Est: {{ cell.quantidade_estoque }}</div>
+                                                        {% else %}
+                                                            <span class="estoque">—</span>
+                                                        {% endif %}
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div style="padding:1rem 1.5rem 1.5rem;color:var(--text-subtle);">Nenhum SKU cadastrado para este modelo.</div>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="section-header">
+                <h2 class="section-title" id="checkout">Finalizar pedido</h2>
+                <p class="section-sub">Preencha seus dados para que a confecção entre em contato com você.</p>
+            </div>
+            <div class="checkout-section">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="cliente_nome">Nome completo *</label>
+                        <input type="text" id="cliente_nome" name="cliente_nome" required autocomplete="name">
+                    </div>
+                    <div class="field">
+                        <label for="cliente_documento">CNPJ/CPF</label>
+                        <input type="text" id="cliente_documento" name="cliente_documento" autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label for="cliente_whatsapp">WhatsApp com DDD *</label>
+                        <input type="tel" id="cliente_whatsapp" name="cliente_whatsapp" placeholder="(xx) xxxxx-xxxx" required autocomplete="tel">
+                    </div>
+                </div>
+                <div class="checkbox">
+                    <input type="checkbox" id="aceite_lgpd" name="aceite_lgpd" required>
+                    <label for="aceite_lgpd">Li e aceito os <strong>Termos de Uso</strong> e a <strong>Política de Privacidade</strong> desta confecção. *</label>
+                </div>
+                <div class="actions">
+                    <button class="btn" type="submit">Gerar pedido no WhatsApp</button>
+                    <a class="btn btn-ghost" href="#top">Voltar ao topo</a>
+                </div>
+            </div>
+        </form>
+        <div class="legal">
+            <div>
+                <h3>Termos de Uso</h3>
+                <pre style="white-space:pre-wrap;background:rgba(15,23,42,0.7);border:1px solid var(--border);border-radius:12px;padding:1rem;max-height:320px;overflow:auto;">{{ empresa.termos_uso|default:"Termos de Uso não cadastrados pela confecção." }}</pre>
+            </div>
+            <div>
+                <h3>Política de Privacidade</h3>
+                <pre style="white-space:pre-wrap;background:rgba(15,23,42,0.7);border:1px solid var(--border);border-radius:12px;padding:1rem;max-height:320px;overflow:auto;">{{ empresa.politica_privacidade|default:"Política de Privacidade não cadastrada pela confecção." }}</pre>
+            </div>
+        </div>
+    </section>
+{% endblock %}

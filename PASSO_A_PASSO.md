@@ -179,6 +179,27 @@ PENDENTE → EM_SEPARACAO → FATURADO → ENVIADO → CONCLUIDO
   **somente leitura** no admin: são gravados pela auditoria e não podem ser editados
   manualmente.
 
+### 5. Catálogo Público (White-Label)
+
+Cada confecção tem um catálogo público em `/catalogo/<slug>/`, onde o `slug` é gerado
+automaticamente a partir do nome fantasia (pode ser editado em **SaaS Global →
+Empresas**). O administrador vê o endereço pronto no bloco **Catálogo Público** do
+cadastro da empresa.
+
+- **White-label**: a página usa a **logo**, a **cor primária** e os contatos
+  (WhatsApp/Instagram) da confecção. Suspenda a empresa (`Status = Suspenso`) para
+  tirar o catálogo do ar — o acesso passa a responder **403**.
+- **Grade Cor × Tamanho**: o lojista informa a quantidade desejada por SKU; o estoque
+  é exibido e validado no envio (pedidos acima do saldo são recusados).
+- **Aceite obrigatório**: sem marcar *Termos de Uso* e *Política de Privacidade* o
+  checkout não é concluído.
+- **Checkout via WhatsApp**: ao finalizar, o sistema cria um `Pedido` (status
+  `PENDENTE`) com a trilha de auditoria LGPD e gera uma mensagem formatada, abrindo o
+  link `wa.me` do WhatsApp comercial com todos os itens, total e dados do cliente.
+
+> **Privacidade:** o link `wa.me` é gerado no servidor a partir do próprio pedido, e
+> não a partir de parâmetros da URL, evitando manipulação externa.
+
 ---
 
 ## 🔒 Guia de Privacidade e LGPD
@@ -232,6 +253,7 @@ Esses campos refletem o item de regra do projeto:
 | SKUs | `/admin/produtos/sku/` |
 | Pedidos | `/admin/pedidos/pedido/` |
 | Grupos | `/admin/auth/group/` |
+| Catálogo público | `/catalogo/<slug>/` |
 
 ---
 
@@ -241,7 +263,7 @@ Esses campos refletem o item de regra do projeto:
   **trava automática de cadastro** no backend ainda será implementada.
 - A segmentação fina de permissões por `role` (além do isolamento por empresa e do
   controle de superadmin) será refinada por grupo de permissões.
-- Checkout público white-label e Bot de Atendimento no WhatsApp estão no roadmap.
+- O Bot de Atendimento no WhatsApp está no roadmap.
 
 ---
 

@@ -1,0 +1,36 @@
+# Ambientes e cache Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[codz]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Banco local e arquivos gerados
+*.sqlite3
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+
+# Documentação e VCS
+.git/
+.gitignore
+.github/
+.claude/
+README.md
+PASSO_A_PASSO.md
+LICENSE
+
+# Infra (não precisa ir para a imagem do Django)
+nginx/
+docker-compose.yml
+Dockerfile
+.dockerignore
