@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Apps do ERP da fábrica
+    'apps.core',
     'apps.tenants',
     'apps.usuarios',
     'apps.clientes',
@@ -188,6 +189,10 @@ CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
+
+# Login unificado no admin (não há tela de login separada no ERP)
+LOGIN_URL = 'admin:login'
+LOGIN_REDIRECT_URL = '/admin/'
 
 # Duas bases de usuários convivem: funcionários do ERP (ModelBackend) e
 # clientes do catálogo público (ClienteBackend).
@@ -323,6 +328,17 @@ def bc_modas_navigation(request):
     return blocos
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Assistente de IA do ERP ("Silk", o guaxinim)
+# Se SILK_AI_API_KEY não estiver definida, o assistente responde com o trecho
+# do manual Markdown correspondente (modo offline) em vez de chamar a IA.
+# ─────────────────────────────────────────────────────────────────────────────
+SILK_AI_API_KEY = os.environ.get("SILK_AI_API_KEY", "")
+SILK_AI_BASE_URL = os.environ.get("SILK_AI_BASE_URL", "https://api.openai.com/v1")
+SILK_AI_MODEL = os.environ.get("SILK_AI_MODEL", "gpt-4o-mini")
+SILK_AI_TIMEOUT = int(os.environ.get("SILK_AI_TIMEOUT", "20"))
+
+
 # Django Unfold — Interface Administrativa
 UNFOLD = {
     'SITE_TITLE': 'BC Modas | ERP da Fábrica',
@@ -333,6 +349,7 @@ UNFOLD = {
     'DASHBOARD_CALLBACK': 'apps.saas_admin.dashboard.dashboard_callback',
     'STYLES': [
         f"{STATIC_URL}css/erp_admin.css",
+        f"{STATIC_URL}css/silk_widget.css",
     ],
     'SIDEBAR': {
         'show_search': True,

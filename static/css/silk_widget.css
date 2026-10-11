@@ -1,0 +1,223 @@
+/* Assistente Silk (guaxinim) — widget flutuante do admin. */
+
+.silk-sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.silk-widget {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 60;
+    font-family: inherit;
+}
+
+/* Botão flutuante com o avatar */
+.silk-avatar-btn {
+    width: 60px;
+    height: 60px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #9ca3af, #6b7280);
+    box-shadow: 0 10px 25px rgba(17, 24, 39, 0.35);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.silk-avatar-btn:hover {
+    box-shadow: 0 14px 32px rgba(17, 24, 39, 0.45);
+}
+
+.silk-avatar {
+    width: 46px;
+    height: 46px;
+    display: block;
+    transition: transform 0.3s ease;
+    transform: scale(1);
+}
+
+/* Animação de abertura: o guaxinim cresce 20% */
+.silk-widget.is-open .silk-avatar {
+    transform: scale(1.2);
+    transition: transform 0.3s ease;
+}
+
+/* Painel de conversa */
+.silk-panel {
+    position: absolute;
+    right: 0;
+    bottom: 76px;
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    height: 480px;
+    max-height: calc(100vh - 130px);
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    box-shadow: 0 24px 50px rgba(17, 24, 39, 0.28);
+    overflow: hidden;
+    animation: silk-pop 0.22s ease;
+}
+
+@keyframes silk-pop {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.silk-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #374151, #111827);
+    color: #f9fafb;
+}
+
+.silk-header-avatar {
+    width: 34px;
+    height: 34px;
+    background: #f9fafb;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.silk-header-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    flex: 1;
+}
+
+.silk-header-text small {
+    font-size: 11px;
+    color: #d1d5db;
+}
+
+.silk-close {
+    border: none;
+    background: transparent;
+    color: #f9fafb;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    opacity: 0.8;
+}
+
+.silk-close:hover { opacity: 1; }
+
+.silk-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #f9fafb;
+}
+
+.silk-msg {
+    max-width: 84%;
+    padding: 9px 12px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.silk-msg--silk {
+    align-self: flex-start;
+    background: #ffffff;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+    border-bottom-left-radius: 4px;
+}
+
+.silk-msg--user {
+    align-self: flex-end;
+    background: #374151;
+    color: #f9fafb;
+    border-bottom-right-radius: 4px;
+}
+
+.silk-msg--loading {
+    font-style: italic;
+    color: #6b7280;
+}
+
+.silk-msg--blocked {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.silk-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid #e5e7eb;
+    background: #ffffff;
+}
+
+.silk-input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: #111827;
+    outline: none;
+}
+
+.silk-input:focus {
+    border-color: #6b7280;
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.18);
+}
+
+.silk-send {
+    border: none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    background: #374151;
+    color: #f9fafb;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.silk-send:hover { background: #111827; }
+
+/* Tema escuro do Unfold */
+.dark .silk-panel {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+.dark .silk-messages { background: #111827; }
+
+.dark .silk-msg--silk {
+    background: #1f2937;
+    color: #e5e7eb;
+    border-color: #374151;
+}
+
+.dark .silk-form {
+    background: #1f2937;
+    border-top-color: #374151;
+}
+
+.dark .silk-input {
+    background: #111827;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}

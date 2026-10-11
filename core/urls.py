@@ -20,10 +20,12 @@ from django.contrib import admin
 from django.urls import path
 
 from apps.clientes import views as clientes_views
+from apps.core import views as core_views
 from apps.pedidos import views as pedidos_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('silk/ajuda/', core_views.silk_help, name='silk_help'),
     path('', pedidos_views.catalogo_home, name='catalogo_home'),
     path(
         'catalogo/<slug:slug>/',

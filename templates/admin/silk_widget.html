@@ -1,0 +1,134 @@
+{% load i18n %}
+<svg class="silk-sprite" aria-hidden="true" focusable="false">
+    <symbol id="silk-raccoon" viewBox="0 0 64 64">
+        <circle cx="17" cy="17" r="9" fill="#6b7280"/>
+        <circle cx="47" cy="17" r="9" fill="#6b7280"/>
+        <circle cx="17" cy="17" r="4.5" fill="#111827"/>
+        <circle cx="47" cy="17" r="4.5" fill="#111827"/>
+        <circle cx="32" cy="34" r="22" fill="#9ca3af"/>
+        <path d="M10 30c6-6 16-6 22-2 6-4 16-4 22 2 3 3 3 9-1 12-5 4-13 3-17-1l-4-3-4 3c-4 4-12 5-17 1-4-3-4-9-1-12z" fill="#374151"/>
+        <circle cx="23" cy="33" r="4.2" fill="#ffffff"/>
+        <circle cx="41" cy="33" r="4.2" fill="#ffffff"/>
+        <circle cx="23" cy="33" r="2.2" fill="#111827"/>
+        <circle cx="41" cy="33" r="2.2" fill="#111827"/>
+        <ellipse cx="32" cy="43" rx="10" ry="8" fill="#f9fafb"/>
+        <path d="M32 40c2.2 0 4 1.4 4 3.2S34.2 47 32 47s-4-1.9-4-3.8S29.8 40 32 40z" fill="#111827"/>
+        <path d="M32 47v3M32 50c-2.5 0-4-1.2-4.5-2.5M32 50c2.5 0 4-1.2 4.5-2.5"
+              stroke="#111827" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+    </symbol>
+</svg>
+
+<div id="silk-widget" class="silk-widget" data-endpoint="{% url 'silk_help' %}">
+    <button type="button" id="silk-toggle" class="silk-avatar-btn"
+            aria-label="Abrir assistente Silk" aria-expanded="false">
+        <svg class="silk-avatar" viewBox="0 0 64 64" aria-hidden="true">
+            <use href="#silk-raccoon"></use>
+        </svg>
+    </button>
+
+    <section id="silk-panel" class="silk-panel" hidden
+             aria-label="Assistente Silk" role="dialog">
+        <header class="silk-header">
+            <svg class="silk-header-avatar" viewBox="0 0 64 64" aria-hidden="true">
+                <use href="#silk-raccoon"></use>
+            </svg>
+            <div class="silk-header-text">
+                <strong>Silk</strong>
+                <small>Assistente do ERP</small>
+            </div>
+            <button type="button" id="silk-close" class="silk-close"
+                    aria-label="Fechar assistente">&times;</button>
+        </header>
+
+        <div id="silk-messages" class="silk-messages" aria-live="polite"></div>
+
+        <form id="silk-form" class="silk-form" autocomplete="off">
+            {% csrf_token %}
+            <input type="text" id="silk-input" class="silk-input"
+                   placeholder="Pergunte sobre esta tela..." maxlength="500"
+                   aria-label="Sua pergunta">
+            <button type="submit" class="silk-send">Enviar</button>
+        </form>
+    </section>
+</div>
+
+<script>
+(function () {
+    const root = document.getElementById("silk-widget");
+    if (!root) return;
+
+    const toggle = document.getElementById("silk-toggle");
+    const panel = document.getElementById("silk-panel");
+    const closeBtn = document.getElementById("silk-close");
+    const form = document.getElementById("silk-form");
+    const input = document.getElementById("silk-input");
+    const messages = document.getElementById("silk-messages");
+    const endpoint = root.dataset.endpoint;
+
+    function csrfToken() {
+        const campo = root.querySelector("[name=csrfmiddlewaretoken]");
+        return campo ? campo.value : "";
+    }
+
+    function addMessage(texto, autor, variante) {
+        const div = document.createElement("div");
+        div.className = "silk-msg silk-msg--" + (autor || "silk");
+        if (variante) div.classList.add("silk-msg--" + variante);
+        div.textContent = texto;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
+    }
+
+    function setOpen(aberto) {
+        root.classList.toggle("is-open", aberto);
+        panel.hidden = !aberto;
+        toggle.setAttribute("aria-expanded", aberto ? "true" : "false");
+        if (aberto) input.focus();
+    }
+
+    toggle.addEventListener("click", function () {
+        setOpen(!root.classList.contains("is-open"));
+    });
+    closeBtn.addEventListener("click", function () { setOpen(false); });
+
+    form.addEventListener("submit", async function (evento) {
+        evento.preventDefault();
+        const pergunta = input.value.trim();
+        if (!pergunta) return;
+
+        addMessage(pergunta, "user");
+        input.value = "";
+        const carregando = addMessage("Silk esta pensando...", "silk", "loading");
+
+        try {
+            const resposta = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken(),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: new URLSearchParams({
+                    pergunta: pergunta,
+                    rota: window.location.pathname,
+                }),
+            });
+            const dados = await resposta.json();
+            carregando.remove();
+            addMessage(
+                dados.resposta || "Nao consegui responder agora.",
+                "silk",
+                dados.bloqueado ? "blocked" : null
+            );
+        } catch (erro) {
+            carregando.remove();
+            addMessage("Ops! Nao consegui falar com o servidor agora.", "silk");
+        }
+    });
+
+    addMessage(
+        "Ola! Sou o Silk, o guaxinim do ERP. Pergunte o que precisar sobre esta tela.",
+        "silk"
+    );
+})();
+</script>
