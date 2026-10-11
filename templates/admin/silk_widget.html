@@ -99,7 +99,7 @@
 
         addMessage(pergunta, "user");
         input.value = "";
-        const carregando = addMessage("Silk esta pensando...", "silk", "loading");
+        const carregando = addMessage("Silk está pensando...", "silk", "loading");
 
         try {
             const resposta = await fetch(endpoint, {
@@ -116,18 +116,18 @@
             const dados = await resposta.json();
             carregando.remove();
             addMessage(
-                dados.resposta || "Nao consegui responder agora.",
+                dados.resposta || "Não consegui responder agora.",
                 "silk",
                 dados.bloqueado ? "blocked" : null
             );
         } catch (erro) {
             carregando.remove();
-            addMessage("Ops! Nao consegui falar com o servidor agora.", "silk");
+            addMessage("Ops! Não consegui falar com o servidor agora.", "silk");
         }
     });
 
     addMessage(
-        "Ola! Sou o Silk, o guaxinim do ERP. Pergunte o que precisar sobre esta tela.",
+        "Olá! Sou o Silk, o guaxinim do ERP. Pergunte o que precisar sobre esta tela.",
         "silk"
     );
 })();
