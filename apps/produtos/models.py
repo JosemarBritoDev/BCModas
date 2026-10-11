@@ -160,6 +160,26 @@ class Modelo(models.Model):
             return self.preco_atacado
         return self.preco_varejo
 
+    @property
+    def fotos_urls(self):
+        """URLs das fotos do modelo.
+
+        Aceita tanto arquivos enviados (armazenados no MEDIA) quanto URLs
+        externas (ex.: imagens de demonstração do Unsplash/placeholder),
+        gravadas diretamente no campo ``foto_*``.
+        """
+        urls = []
+        for indice in range(1, 7):
+            imagem = getattr(self, f"foto_{indice}", None)
+            if not imagem:
+                continue
+            nome = getattr(imagem, "name", "") or ""
+            if nome.startswith(("http://", "https://")):
+                urls.append(nome)
+            else:
+                urls.append(imagem.url)
+        return urls
+
 
 class SKU(models.Model):
     class Tamanho(models.TextChoices):

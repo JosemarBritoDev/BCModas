@@ -3,7 +3,8 @@ from decimal import Decimal
 from django.core.management import call_command
 from django.test import TestCase
 
-from apps.produtos.models import Modelo, SKU
+from apps.clientes.models import Cliente
+from apps.produtos.models import Categoria, Modelo, SKU
 from apps.tenants.models import Empresa
 
 
@@ -65,3 +66,56 @@ class PopulateDemoDataTests(TestCase):
         total = Modelo.objects.count()
         call_command("populate_demo_data", verbosity=0)
         self.assertEqual(Modelo.objects.count(), total)
+
+
+class PopularDemoTests(TestCase):
+    def setUp(self):
+        self.empresa = criar_empresa()
+
+    def test_popula_categorias_produtos_e_clientes(self):
+        call_command("popular_demo", verbosity=0)
+
+        self.assertEqual(Categoria.objects.filter(empresa=self.empresa).count(), 4)
+        modelos = Modelo.objects.filter(empresa=self.empresa)
+        self.assertEqual(modelos.count(), 12)
+        self.assertEqual(Cliente.objects.count(), 6)
+
+        for modelo in modelos:
+            self.assertTrue(modelo.skus.exists())
+            self.assertTrue(modelo.fotos_urls)
+            self.assertTrue(modelo.fotos_urls[0].startswith("https://"))
+
+        for cliente in Cliente.objects.all():
+            self.assertFalse(cliente.has_usable_password())
+            self.assertTrue(cliente.documento_limpo())
+
+    def test_comando_e_idempotente(self):
+        call_command("popular_demo", verbosity=0)
+        call_command("popular_demo", verbosity=0)
+
+        self.assertEqual(Modelo.objects.count(), 12)
+        self.assertEqual(SKU.objects.filter(empresa=self.empresa).count(), 168)
+        self.assertEqual(Cliente.objects.count(), 6)
+        self.assertEqual(Categoria.objects.count(), 4)
+
+    def test_clean_remove_apenas_dados_de_demonstracao(self):
+        outro_modelo = Modelo.objects.create(
+            empresa=self.empresa, nome="Produto Real", preco_varejo=Decimal("10.00")
+        )
+        outro_cliente = Cliente.objects.create_cliente(
+            email="real@empresa.com",
+            nome_razao_social="Cliente Real",
+            whatsapp="(11) 90000-0000",
+            empresa=self.empresa,
+        )
+        call_command("popular_demo", verbosity=0)
+        self.assertEqual(Modelo.objects.filter(empresa=self.empresa).count(), 13)
+
+        call_command("popular_demo", clean=True, verbosity=0)
+
+        self.assertTrue(Empresa.objects.filter(pk=self.empresa.pk).exists())
+        self.assertTrue(Modelo.objects.filter(pk=outro_modelo.pk).exists())
+        self.assertTrue(Cliente.objects.filter(pk=outro_cliente.pk).exists())
+        self.assertEqual(Modelo.objects.filter(empresa=self.empresa).count(), 1)
+        self.assertEqual(Cliente.objects.count(), 1)
+        self.assertEqual(Categoria.objects.filter(empresa=self.empresa).count(), 0)

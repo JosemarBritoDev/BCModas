@@ -190,11 +190,7 @@ def catalogo_publico(request, slug):
 
     catalogo_itens = []
     for modelo in modelos:
-        fotos = []
-        for i in range(1, 7):
-            img = getattr(modelo, f"foto_{i}")
-            if img:
-                fotos.append(img.url)
+        fotos = modelo.fotos_urls
 
         skus = list(modelo.skus.all())
         cor_map = {}
