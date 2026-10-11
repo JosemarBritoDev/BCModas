@@ -314,15 +314,12 @@ class HelpAssistantService:
         trecho = self._trecho(contexto)
         if trecho:
             return (
-                f"Não consegui consultar a IA agora, mas separei este trecho do "
-                f"manual de {nome}:\n\n{trecho}\n\n"
-                "Para respostas geradas por IA, configure a variável "
-                "SILK_AI_API_KEY."
+                f"Aqui está um trecho do manual de {nome} que pode ajudar:"
+                f"\n\n{trecho}"
             )
         return (
-            "Não consegui consultar a IA agora e não encontrei um manual "
-            "específico para esta tela. Descreva sua dúvida com mais detalhes "
-            "ou fale com um gerente."
+            "Não encontrei um manual específico para esta tela. Descreva sua "
+            "dúvida com mais detalhes ou fale com um gerente."
         )
 
     @staticmethod
