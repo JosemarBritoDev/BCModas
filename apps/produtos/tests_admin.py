@@ -218,3 +218,88 @@ class EmpresaScopedMixinTests(TestCase):
         request = RequestFactory().get("/admin/produtos/sku/")
         request.user = financeiro
         self.assertFalse(admin_sku.has_module_permission(request))
+
+
+class EdicaoPorPerfilTests(TestCase):
+    """Perfis gerenciais devem criar/alterar/excluir, não só visualizar.
+
+    Reproduz a queixa de telas "congeladas" no admin de Categoria e Empresa:
+    garante botões de adicionar/alterar e formulário editável (com Save).
+    """
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nome_fantasia="Fábrica Perfis",
+            cnpj="55.555.555/0001-55",
+            email="perfis@fabrica.com",
+            whatsapp_comercial="(11) 94444-0000",
+        )
+        self.categoria = Categoria.objects.create(
+            empresa=self.empresa, nome="Categoria Base", slug="categoria-base"
+        )
+
+    def _login(self, role):
+        user = Usuario.objects.create_user(
+            username=f"perfil_{role}",
+            email=f"perfil_{role}@fabrica.com",
+            password="SenhaForte123",
+            role=role,
+            is_staff=True,
+            empresa=self.empresa,
+        )
+        self.client.force_login(user)
+        return user
+
+    def test_changelist_categoria_com_acoes(self):
+        for role in ("SUPERADMIN", "GERENTE"):
+            with self.subTest(role=role):
+                self._login(role)
+                html = self.client.get(
+                    reverse("admin:produtos_categoria_changelist")
+                ).content.decode()
+                self.assertIn("addlink", html)
+                self.assertIn(
+                    reverse(
+                        "admin:produtos_categoria_change", args=[self.categoria.pk]
+                    ),
+                    html,
+                )
+
+    def test_formulario_empresa_editavel(self):
+        for role in ("SUPERADMIN", "GERENTE"):
+            with self.subTest(role=role):
+                self._login(role)
+                resp = self.client.get(
+                    reverse("admin:tenants_empresa_change", args=[self.empresa.pk])
+                )
+                self.assertEqual(resp.status_code, 200)
+                html = resp.content.decode()
+                self.assertIn('name="_save"', html)
+                # O nome fantasia deve ser editável (não "congelado").
+                trecho = html[
+                    html.find('name="nome_fantasia"') : html.find(
+                        'name="nome_fantasia"'
+                    )
+                    + 300
+                ]
+                self.assertNotIn("readonly", trecho)
+
+    def test_superusuario_tem_acesso_total(self):
+        admin = Usuario.objects.create_superuser(
+            username="root_total",
+            email="root_total@fabrica.com",
+            password="SenhaForte123",
+        )
+        for admin_class, model in (
+            (CategoriaAdmin, Categoria),
+            (ModeloAdmin, Modelo),
+            (SKUAdmin, SKU),
+            (ClienteAdmin, Cliente),
+        ):
+            with self.subTest(admin=admin_class.__name__):
+                request = RequestFactory().get("/admin/")
+                request.user = admin
+                instance = admin_class(model, AdminSite())
+                self.assertTrue(instance.has_add_permission(request))
+                self.assertTrue(instance.has_change_permission(request))
+                self.assertTrue(instance.has_delete_permission(request))

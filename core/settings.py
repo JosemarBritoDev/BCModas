@@ -243,6 +243,11 @@ def bc_modas_navigation(request):
                 'link': reverse_lazy('admin:produtos_modelo_changelist'),
             },
             {
+                'title': 'Categorias',
+                'icon': 'sell',
+                'link': reverse_lazy('admin:produtos_categoria_changelist'),
+            },
+            {
                 'title': 'SKUs / Grade',
                 'icon': 'qr_code_2',
                 'link': reverse_lazy('admin:produtos_sku_changelist'),
