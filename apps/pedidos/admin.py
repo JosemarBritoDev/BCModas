@@ -33,7 +33,7 @@ class ItemPedidoInline(TabularInline):
     model = ItemPedido
     extra = 1
     fields = ("sku", "quantidade", "preco_unitario", "subtotal")
-    autocomplete_fields = ("sku",)
+    # Sem autocomplete_fields para preservar os botões nativos de pop-up do SKU.
     readonly_fields = ("subtotal",)
 
     def has_add_permission(self, request, obj=None):
@@ -70,7 +70,7 @@ class PedidoAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
         "cliente_whatsapp",
         "cliente__email",
     )
-    autocomplete_fields = ("cliente",)
+    # Sem autocomplete_fields para preservar os botões nativos de pop-up do Cliente.
     readonly_fields = (
         "ip_aceite",
         "data_aceite",

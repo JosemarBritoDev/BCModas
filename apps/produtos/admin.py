@@ -99,7 +99,8 @@ class ModeloAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
     )
     list_filter = ("visivel_catalogo", "categoria", "lancamento", "marca")
     search_fields = ("nome", "marca", "descricao")
-    # Removido para teste de adição autocomplete_fields = ("categoria",)
+    # Sem autocomplete_fields para preservar os botões nativos de pop-up
+    # (adicionar/alterar/visualizar/excluir) da categoria.
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (_("Identificação"), {"fields": ("empresa", "nome", "marca", "estampa_logo")}),
@@ -155,7 +156,8 @@ class SKUAdmin(HexPreviewMixin, PerfilAdminMixin, EmpresaScopedAdminMixin, Model
     list_filter = ("tamanho", "cor_nome")
     search_fields = ("modelo__nome", "cor_nome", "codigo_barras")
     list_editable = ("quantidade_estoque",)
-    autocomplete_fields = ("modelo",)
+    # Sem autocomplete_fields para preservar os botões nativos de pop-up
+    # (adicionar/alterar/visualizar/excluir) do modelo relacionado.
     readonly_fields = ("created_at", "updated_at", "cor_previa")
     fieldsets = (
         (

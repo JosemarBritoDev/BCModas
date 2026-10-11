@@ -96,7 +96,7 @@ class ContaReceberAdmin(_FinanceiroBaseAdmin):
     )
     list_filter = ("status", "origem", "forma_pagamento")
     search_fields = ("cliente_nome", "descricao", "pedido__id")
-    autocomplete_fields = ("pedido", "cliente")
+    # Sem autocomplete_fields para preservar os botões nativos de pop-up.
     date_hierarchy = "data_vencimento"
     readonly_fields = ("esta_atrasada", "created_at", "updated_at")
     actions = ("acao_marcar_recebido", "acao_marcar_faturado", "acao_cancelar")
@@ -175,7 +175,7 @@ class CaixaMovimentacaoInline(TabularInline):
     model = CaixaMovimentacao
     extra = 1
     fields = ("tipo", "categoria", "descricao", "valor", "forma_pagamento", "operador")
-    autocomplete_fields = ("operador",)
+    # Sem autocomplete_fields para preservar os botões nativos de pop-up.
 
 
 @admin.register(CaixaDiario)
@@ -238,7 +238,7 @@ class CaixaMovimentacaoAdmin(_FinanceiroBaseAdmin):
     )
     list_filter = ("tipo", "forma_pagamento")
     search_fields = ("descricao", "categoria")
-    autocomplete_fields = ("operador", "conta_receber", "conta_pagar", "pedido")
+    # Sem autocomplete_fields para preservar os botões nativos de pop-up.
     readonly_fields = ("created_at",)
     fieldsets = (
         (

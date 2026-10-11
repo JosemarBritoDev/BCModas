@@ -64,6 +64,23 @@ class EmpresaAdmin(PerfilAdminMixin, ModelAdmin):
         (_("Auditoria"), {"fields": ("created_at", "updated_at")}),
     )
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        """Campos com valor padrão não devem bloquear o cadastro se vazios."""
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name in {"cor_primaria", "taxa_entrega_padrao"} and formfield:
+            formfield.required = False
+        return formfield
+
+    def save_model(self, request, obj, form, change):
+        """Aplica os valores padrão quando o formulário envia campos vazios."""
+        if not obj.cor_primaria:
+            obj.cor_primaria = Empresa._meta.get_field("cor_primaria").get_default()
+        if obj.taxa_entrega_padrao is None:
+            obj.taxa_entrega_padrao = Empresa._meta.get_field(
+                "taxa_entrega_padrao"
+            ).get_default()
+        super().save_model(request, obj, form, change)
+
     @admin.display(description=_("Catálogo Público"))
     def link_catalogo(self, obj):
         if not obj or not obj.slug:
