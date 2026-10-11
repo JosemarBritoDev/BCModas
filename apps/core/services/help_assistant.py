@@ -11,7 +11,10 @@ exemplo, recebe uma mensagem educada de bloqueio — nunca o conteúdo do módul
 
 import json
 import logging
+import re
+import unicodedata
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -95,6 +98,32 @@ class HelpAssistantService:
         "dados, valores ou telas que não estejam no contexto."
     )
 
+    #: Saudação devolvida quando o usuário apenas cumprimenta o assistente.
+    SAUDACAO_RESPOSTA = "Olá! Como posso te ajudar com o ERP hoje?"
+
+    #: Cumprimentos simples tratados direto no código (sem acionar a IA).
+    SAUDACOES = {
+        "oi",
+        "ola",
+        "opa",
+        "hey",
+        "hello",
+        "hi",
+        "bom dia",
+        "boa tarde",
+        "boa noite",
+        "e ai",
+        "eai",
+        "tudo bem",
+        "tudo bom",
+        "tudo certo",
+        "oi tudo bem",
+        "ola tudo bem",
+        "bom dia tudo bem",
+        "boa tarde tudo bem",
+        "boa noite tudo bem",
+    }
+
     def __init__(self, user, current_path=""):
         self.user = user
         self.current_path = (current_path or "").strip()
@@ -143,6 +172,23 @@ class HelpAssistantService:
             return True
         return self.role in roles
 
+    # ── Saudações ────────────────────────────────────────────────────────────
+    @staticmethod
+    def _normalizar(texto):
+        """Minúsculas, sem acentos e sem pontuação, para casar saudações."""
+        texto = (texto or "").strip().lower()
+        texto = "".join(
+            caractere
+            for caractere in unicodedata.normalize("NFD", texto)
+            if unicodedata.category(caractere) != "Mn"
+        )
+        texto = re.sub(r"[!?.,;:]+", " ", texto)
+        return re.sub(r"\s+", " ", texto).strip()
+
+    def e_saudacao(self, pergunta):
+        """Detecta cumprimentos simples (ex.: "oi", "bom dia")."""
+        return self._normalizar(pergunta) in self.SAUDACOES
+
     def carregar_manual(self, modulo):
         """Lê o conteúdo do manual Markdown do módulo (ou string vazia)."""
         if not modulo or modulo not in self.MANUAIS:
@@ -162,6 +208,15 @@ class HelpAssistantService:
         ``modulo`` e ``fonte``.
         """
         pergunta = (pergunta or "").strip()
+
+        # 0) Saudações simples: resposta imediata, sem acionar a IA nem fallback.
+        if self.e_saudacao(pergunta):
+            return {
+                "resposta": self.SAUDACAO_RESPOSTA,
+                "bloqueado": False,
+                "modulo": None,
+                "fonte": None,
+            }
 
         # 1) Trava por rota atual.
         modulo_rota = self.modulo_da_rota()
@@ -235,12 +290,16 @@ class HelpAssistantService:
             "messages": [{"role": "user", "content": prompt}],
         }
         # O Gemini expõe um endpoint compatível com a API OpenAI e autentica
-        # via cabeçalho "Authorization: Bearer <API_KEY>".
+        # via cabeçalho "Authorization: Bearer <API_KEY>". Enviamos também a
+        # chave no parâmetro de URL (?key=<API_KEY>) para compatibilidade total
+        # com as chaves do Google AI Studio.
+        api_key = settings.SILK_AI_API_KEY
+        query = urllib.parse.urlencode({"key": api_key})
         requisicao = urllib.request.Request(
-            f"{base_url}/chat/completions",
+            f"{base_url}/chat/completions?{query}",
             data=json.dumps(payload).encode("utf-8"),
             headers={
-                "Authorization": f"Bearer {settings.SILK_AI_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             method="POST",

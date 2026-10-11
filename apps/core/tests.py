@@ -130,7 +130,7 @@ class RespostaOfflineTests(TestCase):
 
 
 class ChamadaIATests(TestCase):
-    """A chamada HTTP usa o endpoint do Gemini e autentica via Bearer."""
+    """A chamada HTTP usa o endpoint do Gemini e envia a chave por Bearer e URL."""
 
     class _RespostaFalsa:
         def __enter__(self):
@@ -169,9 +169,39 @@ class ChamadaIATests(TestCase):
                 "https://generativelanguage.googleapis.com/v1beta/openai/"
             )
         )
-        self.assertTrue(capturado["url"].endswith("/chat/completions"))
+        self.assertIn("/chat/completions", capturado["url"])
+        self.assertIn("key=chave-teste", capturado["url"])
         self.assertEqual(
             capturado["headers"]["authorization"], "Bearer chave-teste"
+        )
+
+
+class SaudacaoTests(TestCase):
+    """Cumprimentos simples respondem direto no código, sem acionar a IA."""
+
+    def setUp(self):
+        self.service = HelpAssistantService(
+            _usuario("gerente", Usuario.Role.GERENTE), "/admin/"
+        )
+
+    def test_saudacoes_retornam_resposta_amigavel(self):
+        respostas = ("oi", "olá", "ola", "bom dia", "boa tarde", "boa noite", "Olá!")
+        for saudacao in respostas:
+            with self.subTest(saudacao=saudacao):
+                resultado = self.service.responder(saudacao)
+                self.assertFalse(resultado["bloqueado"])
+                self.assertIsNone(resultado["fonte"])
+                self.assertEqual(
+                    resultado["resposta"],
+                    HelpAssistantService.SAUDACAO_RESPOSTA,
+                )
+
+    def test_frase_contendo_palavra_nao_conta_como_saudacao(self):
+        self.service.current_path = "/admin/"
+        self.assertFalse(self.service.e_saudacao("foi cadastrado?"))
+        resultado = self.service.responder("como cadastro um produto?")
+        self.assertNotEqual(
+            resultado["resposta"], HelpAssistantService.SAUDACAO_RESPOSTA
         )
 
 
@@ -234,3 +264,18 @@ class SilkWidgetInjectionTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "silk-widget")
         self.assertContains(resp, reverse("silk_help"))
+
+    def test_widget_aparece_nas_telas_de_listagem_e_edicao(self):
+        superuser = Usuario.objects.create_superuser(
+            username="root", email="root@teste.com", password="SenhaForte123"
+        )
+        self.client.force_login(superuser)
+        for nome, url in (
+            ("listagem", reverse("admin:produtos_modelo_changelist")),
+            ("edição", reverse("admin:produtos_modelo_add")),
+        ):
+            with self.subTest(tela=nome):
+                resp = self.client.get(url)
+                self.assertEqual(resp.status_code, 200)
+                self.assertContains(resp, "silk-widget")
+                self.assertContains(resp, reverse("silk_help"))
