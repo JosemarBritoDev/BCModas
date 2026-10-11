@@ -334,8 +334,11 @@ def bc_modas_navigation(request):
 # do manual Markdown correspondente (modo offline) em vez de chamar a IA.
 # ─────────────────────────────────────────────────────────────────────────────
 SILK_AI_API_KEY = os.environ.get("SILK_AI_API_KEY", "")
-SILK_AI_BASE_URL = os.environ.get("SILK_AI_BASE_URL", "https://api.openai.com/v1")
-SILK_AI_MODEL = os.environ.get("SILK_AI_MODEL", "gpt-4o-mini")
+# Endpoint compatível com a API OpenAI do Google Gemini.
+SILK_AI_BASE_URL = os.environ.get(
+    "SILK_AI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai"
+)
+SILK_AI_MODEL = os.environ.get("SILK_AI_MODEL", "gemini-1.5-flash")
 SILK_AI_TIMEOUT = int(os.environ.get("SILK_AI_TIMEOUT", "20"))
 
 

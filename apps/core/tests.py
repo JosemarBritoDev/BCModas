@@ -1,6 +1,8 @@
 """Testes do Assistente de IA do ERP (Silk): RBAC, manuais e endpoint."""
 
+import json
 from pathlib import Path
+from unittest import mock
 
 from django.conf import settings
 from django.test import TestCase
@@ -125,6 +127,52 @@ class RespostaOfflineTests(TestCase):
         resultado = HelpAssistantService(gerente, "/admin/").responder("")
         self.assertFalse(resultado["bloqueado"])
         self.assertIn("resposta", resultado)
+
+
+class ChamadaIATests(TestCase):
+    """A chamada HTTP usa o endpoint do Gemini e autentica via Bearer."""
+
+    class _RespostaFalsa:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {"choices": [{"message": {"content": "resposta da IA"}}]}
+            ).encode("utf-8")
+
+    def test_envia_bearer_e_endpoint_gemini(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE)
+        service = HelpAssistantService(gerente, "/admin/produtos/")
+        capturado = {}
+
+        def fake_urlopen(requisicao, timeout=None):
+            capturado["url"] = requisicao.full_url
+            capturado["headers"] = {
+                chave.lower(): valor for chave, valor in requisicao.header_items()
+            }
+            return self._RespostaFalsa()
+
+        with self.settings(SILK_AI_API_KEY="chave-teste"), mock.patch(
+            "apps.core.services.help_assistant.urllib.request.urlopen",
+            fake_urlopen,
+        ):
+            resultado = service.responder("Como cadastro um produto?")
+
+        self.assertFalse(resultado["bloqueado"])
+        self.assertEqual(resultado["resposta"], "resposta da IA")
+        self.assertTrue(
+            capturado["url"].startswith(
+                "https://generativelanguage.googleapis.com/v1beta/openai/"
+            )
+        )
+        self.assertTrue(capturado["url"].endswith("/chat/completions"))
+        self.assertEqual(
+            capturado["headers"]["authorization"], "Bearer chave-teste"
+        )
 
 
 class SilkEndpointTests(TestCase):

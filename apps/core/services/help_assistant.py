@@ -219,16 +219,23 @@ class HelpAssistantService:
             logger.exception("Falha ao consultar a API de IA do Silk")
             return self._fallback(contexto, modulo), None
 
+    #: Endpoint compatível com a API OpenAI do Google Gemini. O caminho
+    #: ``/chat/completions`` é acrescentado ao final.
+    BASE_URL_PADRAO = "https://generativelanguage.googleapis.com/v1beta/openai"
+    MODELO_PADRAO = "gemini-1.5-flash"
+
     def _chamar_ia(self, prompt):
         base_url = getattr(
-            settings, "SILK_AI_BASE_URL", "https://api.openai.com/v1"
+            settings, "SILK_AI_BASE_URL", self.BASE_URL_PADRAO
         ).rstrip("/")
-        modelo = getattr(settings, "SILK_AI_MODEL", "gpt-4o-mini")
+        modelo = getattr(settings, "SILK_AI_MODEL", self.MODELO_PADRAO)
         payload = {
             "model": modelo,
             "temperature": 0.2,
             "messages": [{"role": "user", "content": prompt}],
         }
+        # O Gemini expõe um endpoint compatível com a API OpenAI e autentica
+        # via cabeçalho "Authorization: Bearer <API_KEY>".
         requisicao = urllib.request.Request(
             f"{base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
