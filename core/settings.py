@@ -348,7 +348,6 @@ UNFOLD = {
     'SITE_HEADER': 'BC Modas',
     'SITE_SUBHEADER': 'ERP da Fábrica',
     'SITE_URL': '/',
-    'ENVIRONMENT': ['BritosCode Tecnologia | Josemar Brito', 'primary'],
     'DASHBOARD_CALLBACK': 'apps.saas_admin.dashboard.dashboard_callback',
     'STYLES': [
         f"{STATIC_URL}css/erp_admin.css",

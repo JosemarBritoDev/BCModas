@@ -1,14 +1,18 @@
 {% extends "admin/base.html" %}
 {% load i18n %}
 
-{# Injeta o Assistente Silk (guaxinim) em todas as páginas do admin.
-   Usamos o bloco "base" do skeleton do Unfold, e não o "footer", pois telas de
-   listagem (change_list) e edição (change_form) sobrescrevem o "footer" e
-   acabariam removendo o widget. O bloco "base" permanece intacto nas telas
-   filhas, garantindo a presença do widget em todo o painel. #}
+{# Injeta o Assistente Silk (guaxinim) e o rodapé de assinatura em todas as
+   páginas do admin. Usamos o bloco "base" do skeleton do Unfold, e não o
+   "footer", pois telas de listagem (change_list) e edição (change_form)
+   sobrescrevem o "footer" e casos contrários removeriam o conteúdo. O bloco
+   "base" permanece intacto nas telas filhas. #}
 {% block base %}
     {{ block.super }}
     {% if user.is_authenticated and not is_popup %}
         {% include "admin/silk_widget.html" %}
+
+        <footer class="text-center text-sm text-gray-500 dark:text-gray-400 py-4 mt-8 border-t border-gray-100 dark:border-gray-800 select-none">
+            Desenvolvido por BritosCode Tecnologia | Josemar Brito
+        </footer>
     {% endif %}
 {% endblock %}
