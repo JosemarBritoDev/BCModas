@@ -101,6 +101,116 @@ class HelpAssistantService:
     #: Saudação devolvida quando o usuário apenas cumprimenta o assistente.
     SAUDACAO_RESPOSTA = "Olá! Como posso te ajudar com o ERP hoje?"
 
+    #: Perguntas guiadas (Modo Guiado) — chave -> frases canônicas (já
+    #: normalizadas) que acionam uma resposta curta sem depender da IA.
+    GUIAS = {
+        "visao_geral": {
+            "o que e esta tela",
+            "o que e essa tela",
+        },
+        "cadastrar": {
+            "como cadastrar",
+            "como cadastrar um registro",
+            "como crio um registro",
+            "como criar um pedido",
+            "como registrar contas",
+            "como definir acesso",
+        },
+        "regras": {
+            "regras de negocio",
+            "quais as regras",
+        },
+    }
+
+    #: Respostas curtas do Modo Guiado por módulo (fallback "geral").
+    RESPOSTAS_CURTAS = {
+        "geral": {
+            "visao_geral": (
+                "Esta é a visão geral do ERP BC Modas. Use o menu lateral para "
+                "navegar entre os módulos Produtos, Pedidos, Financeiro e Usuários."
+            ),
+            "cadastrar": (
+                "Depende da tela: abra o módulo desejado pelo menu lateral e "
+                "clique no botão Adicionar para criar um novo registro."
+            ),
+            "regras": (
+                "As regras específicas estão descritas no manual de cada módulo. "
+                "Abra a tela desejada e pergunte novamente, ou fale com um gerente."
+            ),
+        },
+        "produtos": {
+            "visao_geral": (
+                "Esta tela pertence ao módulo Produtos e SKUs: Categorias organizam "
+                "o catálogo, Modelos são os produtos 'pai' com preços de varejo e "
+                "atacado, e a grade de SKUs controla cor, tamanho e estoque."
+            ),
+            "cadastrar": (
+                "Vá em Produtos → Modelos → Adicionar. Preencha nome, marca e "
+                "categoria, defina os preços (varejo/atacado) e a quantidade mínima "
+                "de atacado, salve e adicione os SKUs (cor + tamanho) com estoque."
+            ),
+            "regras": (
+                "Estoque é controlado por SKU (variação), não pelo modelo; o par "
+                "Modelo + Cor + Tamanho é único; e o preço de atacado entra "
+                "automaticamente ao atingir a quantidade mínima configurada."
+            ),
+        },
+        "pedidos": {
+            "visao_geral": (
+                "Esta tela pertence ao módulo Pedidos e Vendas, que cobre todo o "
+                "ciclo de venda: criação do pedido, itens, vínculo com o cliente e "
+                "o fluxo de status até a entrega."
+            ),
+            "cadastrar": (
+                "Vá em Pedidos → Adicionar, selecione o cliente (ou preencha nome, "
+                "documento e WhatsApp), escolha forma de pagamento e tipo de "
+                "entrega, adicione os itens com quantidade e preço e confira o "
+                "valor total antes de salvar."
+            ),
+            "regras": (
+                "Principal regra: enquanto o pagamento não for confirmado "
+                "(Pago/Liberado ou Faturado Atacado, ou conta a receber "
+                "Paga/Faturada), o pedido não avança para produção, separação, "
+                "entrega ou conclusão — é a trava financeira."
+            ),
+        },
+        "financeiro": {
+            "visao_geral": (
+                "Esta tela pertence ao módulo Financeiro e Caixa, que controla "
+                "Contas a Receber, Contas a Pagar e as Movimentações de Caixa. O "
+                "acesso é restrito a SUPERADMIN, GERENTE, FINANCEIRO e AUDITOR."
+            ),
+            "cadastrar": (
+                "Registre recebimentos nas Contas a Receber (ou confirme em Caixa "
+                "de Pedidos), despesas nas Contas a Pagar e faça os lançamentos no "
+                "Caixa Diário e nas Movimentações para fechar o dia."
+            ),
+            "regras": (
+                "Marcar uma conta a receber como Recebida gera entrada de caixa; "
+                "marcar conta a pagar como Paga gera saída; há um único caixa por "
+                "empresa e data; e contas Pendentes mantêm a trava financeira."
+            ),
+        },
+        "permissoes": {
+            "visao_geral": (
+                "Esta tela pertence ao módulo de Permissões e Roles (RBAC). O "
+                "acesso é controlado por perfil — SUPERADMIN, GERENTE, COMPRAS, "
+                "VENDAS, FINANCEIRO e AUDITOR — e cada perfil enxerga apenas o "
+                "que pode ver e editar."
+            ),
+            "cadastrar": (
+                "Cadastre o usuário escolhendo a role adequada à função dele. "
+                "Conceda o menor privilégio necessário e use AUDITOR para "
+                "auditorias somente leitura."
+            ),
+            "regras": (
+                "FINANCEIRO enxerga apenas o bloco Financeiro; AUDITOR é somente "
+                "leitura; o superusuário do Django sempre tem acesso total; e o "
+                "Silk bloqueia ajuda de módulos sem permissão da role."
+            ),
+        },
+    }
+
     #: Cumprimentos simples tratados direto no código (sem acionar a IA).
     SAUDACOES = {
         "oi",
@@ -189,6 +299,20 @@ class HelpAssistantService:
         """Detecta cumprimentos simples (ex.: "oi", "bom dia")."""
         return self._normalizar(pergunta) in self.SAUDACOES
 
+    # ── Modo Guiado ──────────────────────────────────────────────────────────
+    def _pergunta_guiada(self, pergunta):
+        """Chave da pergunta guiada correspondente, ou ``None`` para texto livre."""
+        normal = self._normalizar(pergunta)
+        for chave, frases in self.GUIAS.items():
+            if normal in frases:
+                return chave
+        return None
+
+    def _resposta_curta(self, chave, modulo):
+        """Resposta curta e direta do Modo Guiado para o módulo atual."""
+        respostas = self.RESPOSTAS_CURTAS.get(modulo) or self.RESPOSTAS_CURTAS["geral"]
+        return respostas.get(chave) or self.RESPOSTAS_CURTAS["geral"][chave]
+
     def carregar_manual(self, modulo):
         """Lê o conteúdo do manual Markdown do módulo (ou string vazia)."""
         if not modulo or modulo not in self.MANUAIS:
@@ -229,6 +353,17 @@ class HelpAssistantService:
             return self._bloqueio(modulo_pergunta)
 
         modulo = modulo_rota or modulo_pergunta
+
+        # 3) Modo Guiado: respostas curtas para as perguntas padrão, sem IA.
+        chave = self._pergunta_guiada(pergunta)
+        if chave:
+            return {
+                "resposta": self._resposta_curta(chave, modulo),
+                "bloqueado": False,
+                "modulo": modulo,
+                "fonte": None,
+            }
+
         contexto = self.carregar_manual(modulo)
         prompt = self._montar_prompt(pergunta, contexto, modulo)
         resposta, fonte = self._gerar_resposta(prompt, contexto, modulo)

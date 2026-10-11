@@ -174,3 +174,42 @@ html.dark .erp-kpi-desc {
 .erp-password-link .material-symbols-outlined {
     font-size: 1.125rem;
 }
+
+/* --------------------------------------------------------------------------
+   Rodapé de assinatura e botões do Assistente Silk
+   (classes Tailwind + fallback, pois o CSS pré-compilado do Unfold não expõe
+   as utilidades de cores "gray")
+   -------------------------------------------------------------------------- */
+.erp-footer {
+    color: var(--color-font-subtle-light, #6b7280);
+    border-top-color: var(--color-base-200, #e5e7eb);
+}
+
+.dark .erp-footer {
+    color: var(--color-font-subtle-dark, #9ca3af);
+}
+
+.silk-quick {
+    padding: 0 12px 6px;
+}
+
+.silk-chip {
+    color: #4b5563;
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
+    transition: background-color 0.15s ease;
+}
+
+.silk-chip:hover {
+    background-color: #f3f4f6;
+}
+
+.dark .silk-chip {
+    color: #d1d5db;
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+.dark .silk-chip:hover {
+    background-color: #374151;
+}

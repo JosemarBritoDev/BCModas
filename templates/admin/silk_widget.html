@@ -92,13 +92,81 @@
     });
     closeBtn.addEventListener("click", function () { setOpen(false); });
 
-    form.addEventListener("submit", async function (evento) {
-        evento.preventDefault();
-        const pergunta = input.value.trim();
-        if (!pergunta) return;
+    // ── Modo Guiado (Offline) ────────────────────────────────────────────────
+    const CHIPS_POR_MODULO = {
+        financeiro: [
+            "O que é esta tela?",
+            "Como registrar contas?",
+            "Regras de negócio",
+        ],
+        pedidos: [
+            "O que é esta tela?",
+            "Como criar um pedido?",
+            "Regras de negócio",
+        ],
+        produtos: [
+            "O que é esta tela?",
+            "Como cadastrar?",
+            "Regras de negócio",
+        ],
+        permissoes: [
+            "O que é esta tela?",
+            "Como definir acesso?",
+            "Regras de negócio",
+        ],
+        geral: [
+            "O que é esta tela?",
+            "Como cadastrar?",
+            "Regras de negócio",
+        ],
+    };
 
+    function moduloDaRota() {
+        const rota = window.location.pathname;
+        if (rota.indexOf("/admin/financeiro/") === 0) return "financeiro";
+        if (rota.indexOf("/admin/pedidos/") === 0 || rota.indexOf("/admin/clientes/") === 0) return "pedidos";
+        if (rota.indexOf("/admin/produtos/") === 0) return "produtos";
+        if (rota.indexOf("/admin/usuarios/") === 0 || rota.indexOf("/admin/tenants/") === 0 || rota.indexOf("/admin/auth/") === 0) return "permissoes";
+        return "geral";
+    }
+
+    let quickContainer = null;
+
+    function addQuickActions() {
+        if (quickContainer) quickContainer.remove();
+
+        const container = document.createElement("div");
+        container.className = "silk-quick flex flex-wrap gap-2 px-3 pb-2";
+
+        const perguntas = CHIPS_POR_MODULO[moduloDaRota()] || CHIPS_POR_MODULO.geral;
+        perguntas.forEach(function (texto) {
+            const botao = document.createElement("button");
+            botao.type = "button";
+            botao.className =
+                "silk-chip inline-flex items-center rounded-full border border-gray-200 " +
+                "dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 " +
+                "text-xs text-gray-600 dark:text-gray-300 " +
+                "transition hover:bg-gray-100 dark:hover:bg-gray-700 " +
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400";
+            botao.textContent = texto;
+            botao.addEventListener("click", function () {
+                enviarPergunta(texto);
+            });
+            container.appendChild(botao);
+        });
+
+        quickContainer = container;
+        messages.appendChild(container);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function enviarPergunta(pergunta) {
         addMessage(pergunta, "user");
-        input.value = "";
+        if (quickContainer) {
+            quickContainer.remove();
+            quickContainer = null;
+        }
+
         const carregando = addMessage("Silk está pensando...", "silk", "loading");
 
         try {
@@ -124,11 +192,20 @@
             carregando.remove();
             addMessage("Ops! Não consegui falar com o servidor agora.", "silk");
         }
+    }
+
+    form.addEventListener("submit", function (evento) {
+        evento.preventDefault();
+        const pergunta = input.value.trim();
+        if (!pergunta) return;
+        input.value = "";
+        enviarPergunta(pergunta);
     });
 
     addMessage(
         "Olá! Sou o Silk, o guaxinim do ERP. Pergunte o que precisar sobre esta tela.",
         "silk"
     );
+    addQuickActions();
 })();
 </script>

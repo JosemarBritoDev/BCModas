@@ -129,6 +129,84 @@ class RespostaOfflineTests(TestCase):
         self.assertIn("resposta", resultado)
 
 
+class ModoGuiadoTests(TestCase):
+    """Modo Guiado: perguntas padrão retornam respostas curtas, sem IA."""
+
+    PERGUNTAS = {
+        "visao_geral": "O que é esta tela?",
+        "cadastrar": "Como cadastrar?",
+        "regras": "Regras de negócio",
+    }
+    ROTAS = {
+        "produtos": "/admin/produtos/modelo/",
+        "pedidos": "/admin/pedidos/pedido/",
+        "financeiro": "/admin/financeiro/contareceber/",
+        "permissoes": "/admin/usuarios/usuario/",
+    }
+
+    def test_respostas_curtas_dos_botoes(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE)
+        for modulo, rota in self.ROTAS.items():
+            for chave, pergunta in self.PERGUNTAS.items():
+                with self.subTest(modulo=modulo, chave=chave):
+                    resultado = HelpAssistantService(gerente, rota).responder(pergunta)
+                    self.assertFalse(resultado["bloqueado"])
+                    self.assertIsNone(resultado["fonte"])
+                    self.assertEqual(resultado["modulo"], modulo)
+                    self.assertEqual(
+                        resultado["resposta"],
+                        HelpAssistantService.RESPOSTAS_CURTAS[modulo][chave],
+                    )
+
+    def test_variantes_modulares_dos_botoes(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE)
+        casos = (
+            ("produtos", "/admin/produtos/", "Como cadastrar?"),
+            ("pedidos", "/admin/pedidos/", "Como criar um pedido?"),
+            ("financeiro", "/admin/financeiro/", "Como registrar contas?"),
+            ("permissoes", "/admin/usuarios/", "Como definir acesso?"),
+        )
+        for modulo, rota, pergunta in casos:
+            with self.subTest(pergunta=pergunta):
+                resultado = HelpAssistantService(gerente, rota).responder(pergunta)
+                self.assertEqual(
+                    resultado["resposta"],
+                    HelpAssistantService.RESPOSTAS_CURTAS[modulo]["cadastrar"],
+                )
+
+    def test_dashboard_usa_resposta_geral(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE)
+        resultado = HelpAssistantService(gerente, "/admin/").responder(
+            "O que é esta tela?"
+        )
+        self.assertIsNone(resultado["modulo"])
+        self.assertEqual(
+            resultado["resposta"],
+            HelpAssistantService.RESPOSTAS_CURTAS["geral"]["visao_geral"],
+        )
+
+    def test_texto_livre_nao_cai_no_modo_guiado(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE)
+        resultado = HelpAssistantService(gerente, "/admin/produtos/").responder(
+            "Como cadastro um produto no atacado?"
+        )
+        self.assertNotEqual(
+            resultado["resposta"],
+            HelpAssistantService.RESPOSTAS_CURTAS["produtos"]["cadastrar"],
+        )
+        self.assertIn("manual", resultado["resposta"].lower())
+
+    def test_guia_respeita_trava_de_perfil(self):
+        vendedor = _usuario("vendas", Usuario.Role.VENDAS)
+        for pergunta in self.PERGUNTAS.values():
+            with self.subTest(pergunta=pergunta):
+                resultado = HelpAssistantService(
+                    vendedor, "/admin/financeiro/"
+                ).responder(pergunta)
+                self.assertTrue(resultado["bloqueado"])
+                self.assertEqual(resultado["modulo"], "financeiro")
+
+
 class ChamadaIATests(TestCase):
     """A chamada HTTP usa o endpoint do Gemini e envia a chave por Bearer e URL."""
 
@@ -232,6 +310,21 @@ class SilkEndpointTests(TestCase):
         self.assertEqual(dados["modulo"], "produtos")
         self.assertTrue(dados["resposta"])
 
+    def test_post_retorna_resposta_curta_guiada(self):
+        self.client.force_login(self.gerente)
+        resp = self.client.post(
+            self.url,
+            {"pergunta": "O que é esta tela?", "rota": "/admin/produtos/"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        dados = resp.json()
+        self.assertFalse(dados["bloqueado"])
+        self.assertEqual(dados["modulo"], "produtos")
+        self.assertEqual(
+            dados["resposta"],
+            HelpAssistantService.RESPOSTAS_CURTAS["produtos"]["visao_geral"],
+        )
+
     def test_post_bloqueia_vendas_no_financeiro(self):
         self.client.force_login(self.vendedor)
         resp = self.client.post(
@@ -264,6 +357,14 @@ class SilkWidgetInjectionTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "silk-widget")
         self.assertContains(resp, reverse("silk_help"))
+
+    def test_widget_inclui_botoes_de_acao_rapida(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE, is_staff=True)
+        self.client.force_login(gerente)
+        resp = self.client.get(reverse("admin:index"))
+        self.assertContains(resp, "O que é esta tela?")
+        self.assertContains(resp, "Como cadastrar?")
+        self.assertContains(resp, "Regras de negócio")
 
     def test_widget_aparece_nas_telas_de_listagem_e_edicao(self):
         superuser = Usuario.objects.create_superuser(
