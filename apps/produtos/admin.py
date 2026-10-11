@@ -99,7 +99,7 @@ class ModeloAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
     )
     list_filter = ("visivel_catalogo", "categoria", "lancamento", "marca")
     search_fields = ("nome", "marca", "descricao")
-    autocomplete_fields = ("categoria",)
+    # Removido para teste de adição autocomplete_fields = ("categoria",)
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (_("Identificação"), {"fields": ("empresa", "nome", "marca", "estampa_logo")}),
