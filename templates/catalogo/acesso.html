@@ -8,15 +8,15 @@
     <div class="mb-6 text-center">
         <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand">Área do cliente</p>
         <h1 class="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Finalize seu pedido</h1>
-        <p class="mt-2 text-sm text-slate-500">Identifique-se para registrar o pedido e manter seus dados de entrega vinculados à compra.</p>
+        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Identifique-se para registrar o pedido e manter seus dados de entrega vinculados à compra.</p>
     </div>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-7">
-        <div class="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold">
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-7 dark:border-slate-800 dark:bg-slate-800">
+        <div class="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold dark:bg-slate-900">
             <a href="{% url 'catalogo_cliente_login' empresa.slug %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}"
-               class="rounded-lg px-3 py-2 text-center transition {% if aba == 'login' %}bg-white text-brand shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">Entrar</a>
+               class="rounded-lg px-3 py-2 text-center transition {% if aba == 'login' %}bg-white text-brand shadow-sm dark:bg-slate-700{% else %}text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200{% endif %}">Entrar</a>
             <a href="{% url 'catalogo_cliente_cadastro' empresa.slug %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}"
-               class="rounded-lg px-3 py-2 text-center transition {% if aba == 'cadastro' %}bg-white text-brand shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">Cadastrar</a>
+               class="rounded-lg px-3 py-2 text-center transition {% if aba == 'cadastro' %}bg-white text-brand shadow-sm dark:bg-slate-700{% else %}text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200{% endif %}">Cadastrar</a>
         </div>
 
         {% if aba == 'cadastro' %}
@@ -27,70 +27,70 @@
                     <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{{ form_cadastro.non_field_errors }}</div>
                 {% endif %}
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.nome_razao_social.label }} *</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.nome_razao_social.label }} *</label>
                     {{ form_cadastro.nome_razao_social }}
                     {% for e in form_cadastro.nome_razao_social.errors %}<p class="mt-1 text-xs text-red-600">{{ e }}</p>{% endfor %}
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.tipo_pessoa.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.tipo_pessoa.label }}</label>
                         {{ form_cadastro.tipo_pessoa }}
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.cpf_cnpj.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.cpf_cnpj.label }}</label>
                         {{ form_cadastro.cpf_cnpj }}
                         {% for e in form_cadastro.cpf_cnpj.errors %}<p class="mt-1 text-xs text-red-600">{{ e }}</p>{% endfor %}
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.whatsapp.label }} *</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.whatsapp.label }} *</label>
                         {{ form_cadastro.whatsapp }}
                         {% for e in form_cadastro.whatsapp.errors %}<p class="mt-1 text-xs text-red-600">{{ e }}</p>{% endfor %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.email.label }} *</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.email.label }} *</label>
                         {{ form_cadastro.email }}
                         {% for e in form_cadastro.email.errors %}<p class="mt-1 text-xs text-red-600">{{ e }}</p>{% endfor %}
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-3">
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.cep.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.cep.label }}</label>
                         {{ form_cadastro.cep }}
                     </div>
                     <div class="col-span-2">
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.endereco.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.endereco.label }}</label>
                         {{ form_cadastro.endereco }}
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-3">
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.numero.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.numero.label }}</label>
                         {{ form_cadastro.numero }}
                     </div>
                     <div class="col-span-2">
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.bairro.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.bairro.label }}</label>
                         {{ form_cadastro.bairro }}
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-3">
                     <div class="col-span-2">
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.cidade.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.cidade.label }}</label>
                         {{ form_cadastro.cidade }}
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.estado.label }}</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.estado.label }}</label>
                         {{ form_cadastro.estado }}
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.senha.label }} *</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.senha.label }} *</label>
                         {{ form_cadastro.senha }}
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_cadastro.senha_confirma.label }} *</label>
+                        <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_cadastro.senha_confirma.label }} *</label>
                         {{ form_cadastro.senha_confirma }}
                         {% for e in form_cadastro.senha_confirma.errors %}<p class="mt-1 text-xs text-red-600">{{ e }}</p>{% endfor %}
                     </div>
@@ -105,17 +105,17 @@
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_login.email.label }}</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_login.email.label }}</label>
                     {{ form_login.email }}
                 </div>
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-500">{{ form_login.senha.label }}</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-500 dark:text-slate-400">{{ form_login.senha.label }}</label>
                     {{ form_login.senha }}
                 </div>
                 <button type="submit" class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3.5 font-bold text-white transition hover:brightness-95">
                     Entrar e finalizar
                 </button>
-                <p class="text-center text-xs text-slate-500">
+                <p class="text-center text-xs text-slate-500 dark:text-slate-400">
                     Não tem conta?
                     <a href="{% url 'catalogo_cliente_cadastro' empresa.slug %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="font-semibold text-brand underline">Cadastre-se</a>
                 </p>
@@ -123,7 +123,7 @@
         {% endif %}
     </div>
 
-    <p class="mt-4 text-center text-xs text-slate-400">
+    <p class="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
         <a href="{% url 'catalogo_publico' empresa.slug %}" class="underline">← Voltar ao catálogo</a>
     </p>
 </section>

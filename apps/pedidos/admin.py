@@ -20,6 +20,10 @@ CAMPOS_COMERCIAIS = (
     "cliente_whatsapp",
     "total_itens",
     "valor_total",
+    "forma_pagamento",
+    "tipo_entrega",
+    "endereco_entrega",
+    "taxa_entrega",
     "aceite_lgpd",
     "status_financeiro",
 )
@@ -52,12 +56,14 @@ class PedidoAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
         "cliente_whatsapp",
         "total_itens",
         "valor_total",
+        "forma_pagamento",
+        "tipo_entrega",
         "status",
         "status_financeiro",
         "created_at",
     )
     list_display_links = ("id", "cliente_nome")
-    list_filter = ("status", "status_financeiro", "aceite_lgpd")
+    list_filter = ("status", "status_financeiro", "forma_pagamento", "tipo_entrega", "aceite_lgpd")
     search_fields = (
         "cliente_nome",
         "cliente_documento",
@@ -87,6 +93,17 @@ class PedidoAdmin(PerfilAdminMixin, EmpresaScopedAdminMixin, ModelAdmin):
         (
             _("Pedido"),
             {"fields": ("total_itens", "valor_total", "status", "status_financeiro")},
+        ),
+        (
+            _("Pagamento e Entrega"),
+            {
+                "fields": (
+                    "forma_pagamento",
+                    "tipo_entrega",
+                    "endereco_entrega",
+                    "taxa_entrega",
+                )
+            },
         ),
         (
             _("Consentimento LGPD"),

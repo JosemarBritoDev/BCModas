@@ -12,9 +12,10 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.financeiro.models import CaixaDiario, ContaPagar, ContaReceber
-from apps.produtos.models import Modelo, SKU
+from apps.produtos.models import Categoria, Modelo, SKU
 from apps.tenants.models import Empresa
 
 TERMOS = (
@@ -44,10 +45,22 @@ CORES_FIT = [("Preto", "#111111"), ("Cinza Chumbo", "#4b5563"), ("Rosa", "#ec489
 
 TAMANHOS_ADULTO = ["PP", "P", "M", "G", "GG", "XG", "XGG"]
 
+CATEGORIAS = [
+    ("CAMISA_SOCIAL", "Camisas Sociais", 0),
+    ("ESTAMPADA", "Estampadas", 1),
+    ("BASICA", "Básicas", 2),
+    ("MOLETOM", "Moletons e Jaquetas", 3),
+    ("CALCA", "Calças e Bermudas", 4),
+    ("FITNESS", "Moda Fitness", 5),
+    ("OUTROS", "Outros", 6),
+]
+
 PRODUTOS = [
     {
         "nome": "Camiseta Oversized Premium",
         "marca": "BC Modas",
+        "categoria": "BASICA",
+        "lancamento": True,
         "preco_varejo": "69.90",
         "preco_atacado": "44.90",
         "qtd_minima_atacado": 6,
@@ -65,6 +78,7 @@ PRODUTOS = [
     {
         "nome": "Camiseta Básica Gola Careca",
         "marca": "BC Modas",
+        "categoria": "BASICA",
         "preco_varejo": "39.90",
         "preco_atacado": "24.90",
         "qtd_minima_atacado": 6,
@@ -79,6 +93,7 @@ PRODUTOS = [
     {
         "nome": "Camiseta Manga Longa",
         "marca": "BC Modas",
+        "categoria": "BASICA",
         "preco_varejo": "59.90",
         "preco_atacado": "39.90",
         "qtd_minima_atacado": 6,
@@ -93,6 +108,8 @@ PRODUTOS = [
     {
         "nome": "Moletom Canguru Flanelado",
         "marca": "BC Modas",
+        "categoria": "MOLETOM",
+        "lancamento": True,
         "preco_varejo": "159.90",
         "preco_atacado": "109.90",
         "qtd_minima_atacado": 4,
@@ -107,6 +124,7 @@ PRODUTOS = [
     {
         "nome": "Moletom Gola Careca",
         "marca": "BC Modas",
+        "categoria": "MOLETOM",
         "preco_varejo": "129.90",
         "preco_atacado": "89.90",
         "qtd_minima_atacado": 4,
@@ -121,6 +139,7 @@ PRODUTOS = [
     {
         "nome": "Jaqueta Corta-Vento",
         "marca": "BC Modas",
+        "categoria": "MOLETOM",
         "preco_varejo": "149.90",
         "preco_atacado": "99.90",
         "qtd_minima_atacado": 4,
@@ -135,6 +154,7 @@ PRODUTOS = [
     {
         "nome": "Calça Jogger Moletom",
         "marca": "BC Modas",
+        "categoria": "CALCA",
         "preco_varejo": "119.90",
         "preco_atacado": "79.90",
         "qtd_minima_atacado": 4,
@@ -149,6 +169,7 @@ PRODUTOS = [
     {
         "nome": "Calça Jeans Skinny",
         "marca": "BC Modas",
+        "categoria": "CALCA",
         "preco_varejo": "139.90",
         "preco_atacado": "94.90",
         "qtd_minima_atacado": 4,
@@ -163,6 +184,7 @@ PRODUTOS = [
     {
         "nome": "Shorts Moletom",
         "marca": "BC Modas",
+        "categoria": "CALCA",
         "preco_varejo": "79.90",
         "preco_atacado": "49.90",
         "qtd_minima_atacado": 6,
@@ -177,6 +199,7 @@ PRODUTOS = [
     {
         "nome": "Top Fitness Dry Fit",
         "marca": "BC Fit",
+        "categoria": "FITNESS",
         "preco_varejo": "69.90",
         "preco_atacado": "44.90",
         "qtd_minima_atacado": 6,
@@ -191,6 +214,7 @@ PRODUTOS = [
     {
         "nome": "Legging Fitness Alta Compressão",
         "marca": "BC Fit",
+        "categoria": "FITNESS",
         "preco_varejo": "99.90",
         "preco_atacado": "64.90",
         "qtd_minima_atacado": 6,
@@ -205,6 +229,7 @@ PRODUTOS = [
     {
         "nome": "Regata Dry Fit Masculina",
         "marca": "BC Fit",
+        "categoria": "FITNESS",
         "preco_varejo": "54.90",
         "preco_atacado": "34.90",
         "qtd_minima_atacado": 6,
@@ -215,6 +240,38 @@ PRODUTOS = [
         "cores": [("Preto", "#111111"), ("Cinza Chumbo", "#4b5563"), ("Azul Marinho", "#1e3a8a")],
         "tamanhos": ["P", "M", "G", "GG", "XG"],
         "estoque_base": 42,
+    },
+    {
+        "nome": "Camisa Social Slim Fit",
+        "marca": "BC Modas",
+        "categoria": "CAMISA_SOCIAL",
+        "lancamento": True,
+        "preco_varejo": "139.90",
+        "preco_atacado": "94.90",
+        "qtd_minima_atacado": 6,
+        "composicao": "65% algodão, 35% poliéster",
+        "gramatura": "Média",
+        "descricao": "Camisa social slim com colarinho italiano e punho duplo.",
+        "tabela_medidas_json": {"busto": "P:50 | M:52 | G:54 | GG:56"},
+        "cores": [("Branco", "#f8fafc"), ("Azul Claro", "#60a5fa"), ("Preto", "#111111")],
+        "tamanhos": ["P", "M", "G", "GG", "XG"],
+        "estoque_base": 28,
+    },
+    {
+        "nome": "Camiseta Estampada Urban",
+        "marca": "BC Modas",
+        "categoria": "ESTAMPADA",
+        "lancamento": True,
+        "preco_varejo": "79.90",
+        "preco_atacado": "49.90",
+        "qtd_minima_atacado": 6,
+        "composicao": "100% algodão penteado",
+        "gramatura": "175g/m²",
+        "descricao": "Camiseta com estampa urbana em silk de alta durabilidade.",
+        "tabela_medidas_json": {"busto": "P:50 | M:52 | G:54 | GG:56"},
+        "cores": [("Preto", "#111111"), ("Off White", "#f1f5f9")],
+        "tamanhos": ["P", "M", "G", "GG", "XG"],
+        "estoque_base": 32,
     },
 ]
 
@@ -238,7 +295,8 @@ class Command(BaseCommand):
             if options["reset"]:
                 self.stdout.write(self.style.WARNING("Removendo modelos anteriores..."))
                 Modelo.objects.filter(empresa=empresa).delete()
-            self._criar_produtos(empresa)
+            categorias = self._criar_categorias(empresa)
+            self._criar_produtos(empresa, categorias)
             self._criar_financeiro(empresa)
 
         self._resumo(empresa)
@@ -263,13 +321,30 @@ class Command(BaseCommand):
         self.stdout.write(f"  • Fábrica {acao}: {empresa.nome_fantasia} (/{empresa.slug}/)")
         return empresa
 
-    def _criar_produtos(self, empresa):
+    def _criar_categorias(self, empresa):
+        mapa = {}
+        for codigo, nome, ordem in CATEGORIAS:
+            categoria, _ = Categoria.objects.update_or_create(
+                empresa=empresa,
+                slug=slugify(nome)[:90],
+                defaults={"nome": nome, "ordem": ordem, "ativo": True},
+            )
+            mapa[codigo] = categoria
+        self.stdout.write(f"  • Categorias sincronizadas: {len(mapa)}")
+        return mapa
+
+    def _criar_produtos(self, empresa, categorias):
         for dados in PRODUTOS:
+            categoria = categorias.get(
+                dados.get("categoria", "BASICA"), categorias.get("OUTROS")
+            )
             modelo, _ = Modelo.objects.update_or_create(
                 empresa=empresa,
                 nome=dados["nome"],
                 defaults={
                     "marca": dados["marca"],
+                    "categoria": categoria,
+                    "lancamento": dados.get("lancamento", False),
                     "preco_varejo": Decimal(dados["preco_varejo"]),
                     "preco_atacado": Decimal(dados["preco_atacado"]),
                     "qtd_minima_atacado": dados["qtd_minima_atacado"],

@@ -1,7 +1,57 @@
 from decimal import Decimal
 
 from django.db import models
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+
+
+class Categoria(models.Model):
+    """Categoria comercial de produtos da empresa.
+
+    Substitui o antigo campo de escolhas fixas no Modelo, permitindo que cada
+    empresa gerencie livremente o seu menu de navegação do catálogo. Categorias
+    sem produtos ativos vinculados são automaticamente ocultadas no catálogo.
+    """
+
+    empresa = models.ForeignKey(
+        "tenants.Empresa",
+        verbose_name=_("Empresa"),
+        on_delete=models.CASCADE,
+        related_name="categorias",
+    )
+    nome = models.CharField(_("Nome"), max_length=80)
+    slug = models.SlugField(
+        _("Slug"),
+        max_length=90,
+        blank=True,
+        help_text=_("Identificador amigável usado na URL do catálogo."),
+    )
+    ordem = models.PositiveIntegerField(
+        _("Ordem"), default=0, help_text=_("Menor valor aparece primeiro no menu.")
+    )
+    ativo = models.BooleanField(
+        _("Ativa"), default=True, help_text=_("Categorias inativas não são exibidas.")
+    )
+    created_at = models.DateTimeField(_("Criado em"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Atualizado em"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Categoria")
+        verbose_name_plural = _("Categorias")
+        ordering = ["ordem", "nome"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["empresa", "slug"], name="unique_categoria_empresa_slug"
+            )
+        ]
+
+    def __str__(self):
+        return self.nome
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.nome)[:90]
+        super().save(*args, **kwargs)
 
 
 class Modelo(models.Model):
@@ -13,6 +63,27 @@ class Modelo(models.Model):
     )
     nome = models.CharField(_("Nome"), max_length=150)
     marca = models.CharField(_("Marca"), max_length=80, blank=True, default="")
+    categoria = models.ForeignKey(
+        Categoria,
+        verbose_name=_("Categoria"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="produtos",
+        help_text=_("Utilizada no menu de navegação do catálogo público."),
+    )
+    lancamento = models.BooleanField(
+        _("Lançamento"),
+        default=False,
+        help_text=_("Exibe o selo LANÇAMENTO e o destaque no menu de navegação."),
+    )
+    avaliacao = models.DecimalField(
+        _("Avaliação"),
+        max_digits=2,
+        decimal_places=1,
+        default=Decimal("4.5"),
+        help_text=_("Nota de 0,0 a 5,0 exibida por estrelas no catálogo."),
+    )
     estampa_logo = models.ImageField(
         _("Estampa/Logo"), upload_to="produtos/estampas/", blank=True, null=True
     )

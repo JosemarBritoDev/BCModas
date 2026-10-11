@@ -1,0 +1,37 @@
+{% extends "catalogo/base_catalogo.html" %}
+
+{% block title %}Termos e Privacidade | {{ empresa.nome_fantasia }}{% endblock %}
+
+{% block content %}
+<section class="mx-auto w-full max-w-3xl px-4 py-10">
+    <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand">Institucional</p>
+    <h1 class="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Termos e Privacidade</h1>
+    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        Documentos de uso e proteção de dados de {{ empresa.nome_fantasia }}, em conformidade com a LGPD.
+    </p>
+
+    <article id="termos" class="mt-8 scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-card dark:border-slate-800 dark:bg-slate-800">
+        <h2 class="flex items-center gap-2 text-lg font-bold">
+            <i class="fa-solid fa-file-contract text-brand" aria-hidden="true"></i> Termos de Uso
+        </h2>
+        <div class="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-600 dark:text-slate-300">{{ empresa.termos_uso|default:"Termos de Uso ainda não cadastrados pela fábrica." }}</div>
+    </article>
+
+    <article id="privacidade" class="mt-6 scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-card dark:border-slate-800 dark:bg-slate-800">
+        <h2 class="flex items-center gap-2 text-lg font-bold">
+            <i class="fa-solid fa-shield-halved text-brand" aria-hidden="true"></i> Política de Privacidade / LGPD
+        </h2>
+        <div class="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-600 dark:text-slate-300">{{ empresa.politica_privacidade|default:"Política de Privacidade ainda não cadastrada pela fábrica." }}</div>
+        <p class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+            Ao finalizar um pedido, registramos seu consentimento com data/hora, endereço IP e versão dos termos,
+            conforme exigido pela Lei nº 13.709/2018 (LGPD).
+        </p>
+    </article>
+
+    <div class="mt-8">
+        <a href="{% url 'catalogo_publico' empresa.slug %}" class="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar ao catálogo
+        </a>
+    </div>
+</section>
+{% endblock %}

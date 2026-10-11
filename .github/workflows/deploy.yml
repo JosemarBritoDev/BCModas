@@ -1,11 +1,57 @@
-name: Deploy BC Modas na VPS
+name: CI e Deploy BC Modas
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
+  testes:
+    name: Testes e verificação de segurança
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: "ci-secret-key-8f2b1d9e4c7a6b3f0e5d2c8a1b9f4e7d6c3a0b5f2e8d1c4a7b6f9e3d0c5a2b8f"
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Checagem de configuração para produção
+        run: python manage.py check --deploy
+      - name: Testes automatizados
+        run: python manage.py test --verbosity 2
+
+  seguranca:
+    name: Varredura de segurança (SAST e dependências)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar ferramentas
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt bandit pip-audit
+      - name: Bandit (análise estática)
+        run: bandit -r apps core -x "*/migrations/*,*/tests.py" -lll
+      - name: pip-audit (vulnerabilidades em dependências)
+        run: pip-audit --skip-editable
+
   deploy:
+    name: Deploy na VPS
+    needs: [testes]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Executar Deploy via SSH

@@ -1,14 +1,14 @@
 from decimal import Decimal
 
 from django.contrib.admin.sites import AdminSite
-from django.test import RequestFactory, TestCase
+from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 
 from apps.clientes.models import Cliente
 from apps.pedidos.admin import PedidoAdmin
 from apps.pedidos.models import ItemPedido, Pedido
 from apps.pedidos.views import _formatar_numero_whatsapp
-from apps.produtos.models import Modelo, SKU
+from apps.produtos.models import Categoria, Modelo, SKU
 from apps.tenants.models import Empresa
 from apps.usuarios.models import Usuario
 
@@ -218,6 +218,229 @@ class CatalogoFlowTests(TestCase):
         self.sku.refresh_from_db()
         self.assertEqual(outro_sku.quantidade_estoque, 5)
         self.assertEqual(self.sku.quantidade_estoque, 9)
+
+
+class CatalogoRefatoracaoTests(TestCase):
+    """Cobre a refatoração do catálogo: categorias, busca, checkout e LGPD."""
+
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nome_fantasia="Josemar Brito Modas",
+            cnpj="22.222.222/0001-22",
+            status=Empresa.Status.ATIVO,
+            whatsapp_comercial="(11) 98888-7777",
+            instagram="@josemarbrito",
+            email="contato@josemarbrito.com.br",
+            endereco_origem="Rua Anne Baxter, 14",
+            taxa_entrega_padrao=Decimal("25.00"),
+            termos_uso="Termos v2",
+            politica_privacidade="Privacidade v2",
+        )
+        self.categoria_basica = Categoria.objects.create(
+            empresa=self.empresa, nome="Básicas", ordem=2
+        )
+        self.categoria_social = Categoria.objects.create(
+            empresa=self.empresa, nome="Camisas Sociais", ordem=0
+        )
+        self.categoria_vazia = Categoria.objects.create(
+            empresa=self.empresa, nome="Categoria Sem Produtos", ordem=9
+        )
+        self.modelo_basico = Modelo.objects.create(
+            empresa=self.empresa,
+            nome="Camiseta Básica",
+            marca="JB Modas",
+            categoria=self.categoria_basica,
+            preco_varejo=Decimal("39.90"),
+            preco_atacado=Decimal("24.90"),
+            qtd_minima_atacado=6,
+        )
+        self.modelo_social = Modelo.objects.create(
+            empresa=self.empresa,
+            nome="Camisa Social Slim",
+            categoria=self.categoria_social,
+            lancamento=True,
+            preco_varejo=Decimal("139.90"),
+        )
+        self.sku_basico = SKU.objects.create(
+            empresa=self.empresa,
+            modelo=self.modelo_basico,
+            cor_nome="Preto",
+            cor_hex="#111111",
+            tamanho=SKU.Tamanho.M,
+            quantidade_estoque=20,
+        )
+        self.cliente = Cliente.objects.create_cliente(
+            email="cliente@jb.com.br",
+            password="SenhaForte123",
+            empresa=self.empresa,
+            nome_razao_social="Cliente JB",
+            tipo_pessoa=Cliente.TipoPessoa.PF,
+            whatsapp="11988887777",
+        )
+
+    def _logar(self):
+        self.client.force_login(self.cliente, backend=BACKEND_CLIENTE)
+
+    def _url(self, nome, **kwargs):
+        return reverse(nome, kwargs={"slug": self.empresa.slug, **kwargs})
+
+    def test_menu_de_categorias_disponivel(self):
+        resp = self.client.get(self._url("catalogo_publico"))
+        self.assertEqual(resp.status_code, 200)
+        for label in ["Lançamentos", "Camisas Sociais", "Básicas", "Atacado"]:
+            self.assertContains(resp, label)
+
+    def test_categorias_sem_produtos_sao_ocultadas(self):
+        resp = self.client.get(self._url("catalogo_publico"))
+        self.assertNotContains(resp, "Categoria Sem Produtos")
+
+    def test_catalogo_expoe_recursos_mobile_first(self):
+        resp = self.client.get(self._url("catalogo_publico"))
+        html = resp.content.decode()
+        for marcador in (
+            "darkMode: 'class'",
+            'id="theme-toggle"',
+            "Navegação rápida",
+            'id="search-modal"',
+            'id="cat-drawer"',
+            "max-h-[55vh]",
+            "env(safe-area-inset-bottom)",
+            "data-cart-badge",
+        ):
+            self.assertIn(marcador, html)
+        self.assertIn("dark:bg-slate-900", html)
+
+    def test_filtro_por_lancamento(self):
+        resp = self.client.get(self._url("catalogo_publico") + "?categoria=lancamentos")
+        self.assertContains(resp, "Camisa Social Slim")
+        self.assertNotContains(resp, "Camiseta Básica")
+
+    def test_filtro_por_atacado(self):
+        resp = self.client.get(self._url("catalogo_publico") + "?categoria=atacado")
+        self.assertContains(resp, "Camiseta Básica")
+        self.assertNotContains(resp, "Camisa Social Slim")
+
+    def test_filtro_por_categoria(self):
+        resp = self.client.get(
+            self._url("catalogo_publico") + "?categoria=camisas-sociais"
+        )
+        self.assertContains(resp, "Camisa Social Slim")
+        self.assertNotContains(resp, "Camiseta Básica")
+
+    def test_busca_no_servidor(self):
+        resp = self.client.get(self._url("catalogo_publico") + "?q=social")
+        self.assertContains(resp, "Camisa Social Slim")
+        self.assertNotContains(resp, "Camiseta Básica")
+
+    def test_busca_escapa_html(self):
+        resp = self.client.get(
+            self._url("catalogo_publico") + "?q=%3Cscript%3Ealert(1)%3C/script%3E"
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("<script>alert(1)</script>", resp.content.decode())
+
+    def test_paginas_nao_expoem_whatsapp_em_botao_gigante_no_topo(self):
+        resp = self.client.get(self._url("catalogo_publico"))
+        self.assertNotContains(resp, ">WhatsApp<")
+
+    def test_legal_page(self):
+        resp = self.client.get(self._url("catalogo_legal"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Termos de Uso")
+        self.assertContains(resp, "Termos v2")
+        self.assertContains(resp, "Privacidade v2")
+
+    def test_checkout_persiste_pagamento_e_entrega(self):
+        self._logar()
+        resp = self.client.post(
+            self._url("catalogo_checkout"),
+            {
+                "aceite_lgpd": "on",
+                f"qty_{self.sku_basico.pk}": "6",
+                "forma_pagamento": "CREDITO",
+                "tipo_entrega": "ENTREGA",
+                "endereco_entrega": "Rua Anne Baxter, 14 - Centro",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        pedido = Pedido.objects.get()
+        self.assertEqual(pedido.forma_pagamento, Pedido.FormaPagamento.CREDITO)
+        self.assertEqual(pedido.tipo_entrega, Pedido.TipoEntrega.ENTREGA)
+        self.assertEqual(pedido.endereco_entrega, "Rua Anne Baxter, 14 - Centro")
+        self.assertEqual(pedido.taxa_entrega, Decimal("25.00"))
+        self.assertEqual(pedido.valor_total_com_frete, Decimal("174.40"))
+
+    def test_checkout_pagamento_invalido_cai_para_pix(self):
+        self._logar()
+        self.client.post(
+            self._url("catalogo_checkout"),
+            {
+                "aceite_lgpd": "on",
+                f"qty_{self.sku_basico.pk}": "1",
+                "forma_pagamento": "BOLETO_FRAUDADO",
+                "tipo_entrega": "HACKEADO",
+            },
+        )
+        pedido = Pedido.objects.get()
+        self.assertEqual(pedido.forma_pagamento, Pedido.FormaPagamento.PIX)
+        self.assertEqual(pedido.tipo_entrega, Pedido.TipoEntrega.RETIRADA_LOCAL)
+        self.assertEqual(pedido.taxa_entrega, Decimal("0.00"))
+
+    def test_entrega_exige_endereco(self):
+        self._logar()
+        resp = self.client.post(
+            self._url("catalogo_checkout"),
+            {
+                "aceite_lgpd": "on",
+                f"qty_{self.sku_basico.pk}": "1",
+                "tipo_entrega": "ENTREGA",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(Pedido.objects.count(), 0)
+        self.sku_basico.refresh_from_db()
+        self.assertEqual(self.sku_basico.quantidade_estoque, 20)
+
+    def test_payload_whatsapp_inclui_pagamento_e_frete(self):
+        self._logar()
+        self.client.post(
+            self._url("catalogo_checkout"),
+            {
+                "aceite_lgpd": "on",
+                f"qty_{self.sku_basico.pk}": "6",
+                "forma_pagamento": "PIX",
+                "tipo_entrega": "ENTREGA",
+                "endereco_entrega": "Rua Anne Baxter, 14",
+            },
+        )
+        pedido = Pedido.objects.get()
+        resp = self.client.get(
+            self._url("catalogo_pedido_enviado", pedido_id=pedido.pk)
+        )
+        conteudo = resp.content.decode()
+        self.assertIn("FORMA%20DE%20PAGAMENTO", conteudo)
+        self.assertIn("Pix", conteudo)
+        self.assertIn("Rua%20Anne%20Baxter", conteudo)
+        self.assertIn("Aceite%20LGPD", conteudo)
+
+    def test_checkout_visivel_para_cliente_logado(self):
+        self._logar()
+        resp = self.client.get(self._url("catalogo_publico"))
+        self.assertContains(resp, "Finalizar Pedido via WhatsApp")
+        self.assertContains(resp, 'name="aceite_lgpd"')
+        self.assertContains(resp, 'name="endereco_entrega"')
+        self.assertContains(resp, 'value="RETIRADA_LOCAL"')
+        self.assertContains(resp, 'value="ENTREGA"')
+
+    def test_checkout_exige_csrf(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.cliente, backend=BACKEND_CLIENTE)
+        resp = csrf_client.post(
+            self._url("catalogo_checkout"),
+            {"aceite_lgpd": "on", f"qty_{self.sku_basico.pk}": "1"},
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(Pedido.objects.count(), 0)
 
 
 class PedidoAdminTests(TestCase):

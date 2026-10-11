@@ -3,109 +3,151 @@
 <html lang="pt-br" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="{{ empresa.cor_primaria|default:'#111827' }}">
-    <meta name="description" content="Vitrine de fábrica de {{ empresa.nome_fantasia }} — venda no atacado e no varejo. Peça pelo WhatsApp.">
-    <title>{% block title %}{{ empresa.nome_fantasia }} | Vitrine de Fábrica{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="{{ empresa.cor_primaria|default:'#111827' }}" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <meta name="description" content="{{ empresa.nome_fantasia }} — moda masculina no atacado e varejo. Monte sua grade e finalize o pedido pelo WhatsApp.">
+    <title>{% block title %}{{ empresa.nome_fantasia }} | Atacado e Varejo{% endblock %}</title>
     {% if empresa.favicon %}<link rel="icon" href="{{ empresa.favicon.url }}">{% endif %}
+
+    <script>
+        /* Aplica o tema antes da pintura para evitar flash (FOUC). */
+        (function () {
+            try {
+                var saved = localStorage.getItem('bcmodas-theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (saved === 'dark' || (!saved && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
                         brand: {
                             DEFAULT: '{{ empresa.cor_primaria|default:"#111827" }}',
-                            soft: '{{ empresa.cor_primaria|default:"#111827" }}14',
+                            soft: '{{ empresa.cor_primaria|default:"#111827" }}1a',
                         },
                     },
                     fontFamily: {
                         sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
                     },
                     boxShadow: {
-                        card: '0 1px 2px rgba(15,23,42,.05), 0 10px 30px -18px rgba(15,23,42,.25)',
+                        card: '0 1px 2px rgba(15,23,42,.04), 0 12px 32px -20px rgba(15,23,42,.28)',
                     },
                 },
             },
         };
     </script>
-    <style>
-        :root { --brand: {{ empresa.cor_primaria|default:'#111827' }}; }
-        html { -webkit-tap-highlight-color: transparent; }
-        button { touch-action: manipulation; }
-        [x-cloak] { display: none !important; }
-        .swatch { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .18); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        @keyframes slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .animate-drawer { animation: slide-in .22s ease-out; }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>:root { --brand: {{ empresa.cor_primaria|default:'#111827' }}; --brand-soft: {{ empresa.cor_primaria|default:'#111827' }}1a; }</style>
+    <link rel="stylesheet" href="{% static 'css/catalogo.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 antialiased flex flex-col">
+<body class="flex min-h-screen flex-col bg-slate-50 text-slate-900 antialiased dark:bg-slate-900 dark:text-slate-100">
 
-    <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur">
-        <div class="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-3">
-            <a href="{% url 'catalogo_publico' empresa.slug %}" class="flex min-w-0 items-center gap-3">
-                <span class="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-lg font-extrabold text-brand">
-                    {% if empresa.logo %}
-                        <img src="{{ empresa.logo.url }}" alt="{{ empresa.nome_fantasia }}" class="h-full w-full object-cover">
-                    {% else %}
-                        {{ empresa.nome_fantasia|slice:":1"|upper }}
-                    {% endif %}
-                </span>
-                <span class="min-w-0">
-                    <strong class="block truncate text-base leading-tight">{{ empresa.nome_fantasia }}</strong>
-                    <small class="block text-xs text-slate-500">Fábrica • Atacado e Varejo</small>
-                </span>
-            </a>
+    <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+        <div class="mx-auto w-full max-w-7xl px-4">
+            <div class="flex items-center gap-2 py-3">
+                <a href="{% url 'catalogo_publico' empresa.slug %}" class="flex flex-none items-center gap-2.5">
+                    <span class="flex h-10 w-10 flex-none items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-lg font-extrabold text-brand dark:border-slate-700 dark:bg-slate-800">
+                        {% if empresa.logo %}
+                            <img src="{{ empresa.logo.url }}" alt="{{ empresa.nome_fantasia }}" class="h-full w-full object-cover">
+                        {% else %}
+                            {{ empresa.nome_fantasia|slice:":1"|upper }}
+                        {% endif %}
+                    </span>
+                    <span class="hidden min-w-0 sm:block">
+                        <strong class="block truncate text-base font-extrabold leading-tight tracking-tight">{{ empresa.nome_fantasia }}</strong>
+                        <small class="block text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Atacado &amp; Varejo</small>
+                    </span>
+                </a>
 
-            <div class="ml-auto flex items-center gap-2">
-                {% block header_actions %}
+                <form method="get" action="{% url 'catalogo_publico' empresa.slug %}"
+                      class="relative hidden flex-1 md:block md:max-w-xl" role="search">
+                    {% if categoria_atual %}<input type="hidden" name="categoria" value="{{ categoria_atual }}">{% endif %}
+                    <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" aria-hidden="true"></i>
+                    <input type="search" name="q" value="{{ termo_busca|default:'' }}" placeholder="Olá, o que você procura?"
+                           class="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-4 text-sm outline-none transition focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/20 dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
+                           aria-label="Buscar no catálogo">
+                </form>
+
+                <div class="ml-auto flex flex-none items-center gap-1 sm:gap-2">
+                    <button type="button" id="search-toggle" title="Buscar" onclick="abrirBusca()"
+                            class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand hover:text-brand md:hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <span class="sr-only">Buscar</span>
+                    </button>
+
+                    <button type="button" id="theme-toggle" title="Alternar tema" aria-pressed="false"
+                            class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <i class="fa-solid fa-moon text-[15px] dark:hidden" aria-hidden="true"></i>
+                        <i class="fa-solid fa-sun hidden text-[15px] dark:inline" aria-hidden="true"></i>
+                        <span class="sr-only">Alternar tema claro/escuro</span>
+                    </button>
+
                     {% if cliente_logado %}
-                        <span class="hidden text-right text-xs leading-tight text-slate-500 sm:block">
-                            Olá, <strong class="text-slate-700">{{ cliente_logado.primeiro_nome }}</strong>
+                        <span class="hidden text-right text-xs leading-tight text-slate-500 lg:block dark:text-slate-400">
+                            Olá,<br><strong class="text-slate-700 dark:text-slate-200">{{ cliente_logado.primeiro_nome }}</strong>
                         </span>
                         <form method="post" action="{% url 'catalogo_cliente_logout' empresa.slug %}">
                             {% csrf_token %}
-                            <button type="submit" class="hidden rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand hover:text-brand sm:inline-flex">
-                                Sair
+                            <button type="submit" title="Sair"
+                                    class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                                <span class="sr-only">Sair</span>
                             </button>
                         </form>
                     {% else %}
-                        <a href="{% url 'catalogo_cliente_login' empresa.slug %}"
-                           class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand hover:text-brand">
-                            Entrar
+                        <a href="{% url 'catalogo_cliente_login' empresa.slug %}" title="Minha conta"
+                           class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            <i class="fa-regular fa-user" aria-hidden="true"></i>
+                            <span class="sr-only">Minha conta</span>
                         </a>
                     {% endif %}
-                    {% if empresa.instagram %}
-                        <a href="https://instagram.com/{{ empresa.instagram|cut:'@' }}" target="_blank" rel="noopener"
-                           class="hidden rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand hover:text-brand sm:inline-flex">
-                            Instagram
-                        </a>
+
+                    {% if categorias %}
+                        <button type="button" id="cart-toggle" title="Sacola" onclick="abrirCarrinho()"
+                                class="relative hidden h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand hover:text-brand lg:flex dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
+                            <span data-cart-badge class="absolute -right-1 -top-1 hidden h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">0</span>
+                            <span class="sr-only">Sacola de compras</span>
+                        </button>
                     {% endif %}
-                    {% if whatsapp_url %}
-                        <a href="{{ whatsapp_url }}" target="_blank" rel="noopener"
-                           class="inline-flex items-center gap-2 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition hover:brightness-95">
-                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            WhatsApp
-                        </a>
-                    {% endif %}
-                {% endblock %}
+                </div>
             </div>
         </div>
+
+        {% if categorias %}
+        <nav class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900" aria-label="Categorias">
+            <div class="mx-auto flex w-full max-w-7xl gap-1 overflow-x-auto px-2 no-scrollbar">
+                {% for c in categorias %}
+                    <a href="{{ c.url }}"
+                       class="flex-none whitespace-nowrap border-b-2 px-3.5 py-3 text-sm font-semibold transition
+                              {% if c.ativo %}border-brand text-brand{% else %}border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white{% endif %}">
+                        {{ c.label }}
+                    </a>
+                {% endfor %}
+            </div>
+        </nav>
+        {% endif %}
     </header>
 
     {% if messages %}
-        <div class="mx-auto w-full max-w-6xl px-4 pt-4">
+        <div class="mx-auto w-full max-w-7xl px-4 pt-4">
             {% for message in messages %}
-                <div class="mb-2 rounded-xl border px-4 py-3 text-sm
-                    {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800
-                    {% elif message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800
-                    {% else %}border-blue-200 bg-blue-50 text-blue-800{% endif %}">
-                    {{ message }}
+                <div class="mb-2 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm
+                    {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300
+                    {% elif message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300
+                    {% else %}border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300{% endif %}">
+                    <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% elif message.tags == 'success' %}fa-circle-check{% else %}fa-circle-info{% endif %} mt-0.5" aria-hidden="true"></i>
+                    <span>{{ message }}</span>
                 </div>
             {% endfor %}
         </div>
@@ -113,17 +155,203 @@
 
     <main class="flex-1">{% block content %}{% endblock %}</main>
 
-    <footer class="mt-16 border-t border-slate-200 bg-white">
-        <div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-8 text-sm sm:flex-row sm:items-center sm:justify-between">
-            <div class="text-slate-600">
-                <strong class="text-slate-900">{{ empresa.nome_fantasia }}</strong>
-                {% if empresa.endereco_origem %}<div class="text-xs text-slate-500">{{ empresa.endereco_origem }}</div>{% endif %}
+    <footer class="mt-16 border-t border-slate-200 bg-white pb-24 lg:pb-0 dark:border-slate-800 dark:bg-slate-900">
+        <div class="mx-auto grid w-full max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-10 w-10 flex-none items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-lg font-extrabold text-brand dark:border-slate-700 dark:bg-slate-800">
+                        {% if empresa.logo %}
+                            <img src="{{ empresa.logo.url }}" alt="{{ empresa.nome_fantasia }}" class="h-full w-full object-cover">
+                        {% else %}
+                            {{ empresa.nome_fantasia|slice:":1"|upper }}
+                        {% endif %}
+                    </span>
+                    <strong class="text-base font-extrabold tracking-tight">{{ empresa.nome_fantasia }}</strong>
+                </div>
+                <p class="mt-4 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    Fábrica de moda masculina com venda no atacado e varejo. Peças produzidas com
+                    qualidade e preço direto de fábrica.
+                </p>
+                <p class="mt-4 flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <i class="fa-solid fa-location-dot mt-1 text-brand" aria-hidden="true"></i>
+                    <span>{{ empresa.endereco_origem|default:"Rua Anne Baxter, 14" }}</span>
+                </p>
             </div>
-            <div class="text-xs font-medium text-slate-500">
-                Desenvolvido por BritosCode Tecnologia | Josemar Brito
+
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-900 dark:text-slate-100">Navegação</h3>
+                <ul class="mt-4 space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
+                    <li><a href="{% url 'catalogo_publico' empresa.slug %}" class="transition hover:text-brand">Todos os produtos</a></li>
+                    {% for c in categorias %}
+                        {% if c.slug %}
+                            <li><a href="{{ c.url }}" class="transition hover:text-brand">{{ c.label }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if not categorias %}
+                        <li><a href="{% url 'catalogo_publico' empresa.slug %}" class="transition hover:text-brand">Novidades</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-900 dark:text-slate-100">Atendimento</h3>
+                <ul class="mt-4 space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
+                    {% if whatsapp_url %}
+                        <li>
+                            <a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="flex items-center gap-2 transition hover:text-brand">
+                                <i class="fa-brands fa-whatsapp text-brand" aria-hidden="true"></i> WhatsApp comercial
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if empresa.instagram %}
+                        <li>
+                            <a href="https://instagram.com/{{ empresa.instagram|cut:'@' }}" target="_blank" rel="noopener" class="flex items-center gap-2 transition hover:text-brand">
+                                <i class="fa-brands fa-instagram text-brand" aria-hidden="true"></i> @{{ empresa.instagram|cut:'@' }}
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if empresa.email %}
+                        <li>
+                            <a href="mailto:{{ empresa.email }}" class="flex items-center gap-2 transition hover:text-brand">
+                                <i class="fa-regular fa-envelope text-brand" aria-hidden="true"></i> {{ empresa.email }}
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-900 dark:text-slate-100">Informações Legais</h3>
+                <ul class="mt-4 space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
+                    <li><a href="{% url 'catalogo_legal' empresa.slug %}#termos" class="transition hover:text-brand">Termos de Uso</a></li>
+                    <li><a href="{% url 'catalogo_legal' empresa.slug %}#privacidade" class="transition hover:text-brand">Política de Privacidade</a></li>
+                    <li><a href="{% url 'catalogo_legal' empresa.slug %}#privacidade" class="transition hover:text-brand">LGPD</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-100 dark:border-slate-800">
+            <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-center text-xs text-slate-500 sm:flex-row sm:text-left dark:text-slate-400">
+                <span>© 2026 {{ empresa.nome_fantasia }}. Todos os direitos reservados.</span>
+                <span class="font-medium">Desenvolvido por BritosCode Tecnologia | Josemar Brito</span>
             </div>
         </div>
     </footer>
+
+    {% if categorias %}
+    <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/95"
+         aria-label="Navegação rápida">
+        <div class="mx-auto grid max-w-7xl grid-cols-4">
+            <a href="{% url 'catalogo_publico' empresa.slug %}"
+               class="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 transition active:text-brand dark:text-slate-400">
+                <i class="fa-solid fa-house text-lg" aria-hidden="true"></i>
+                <span>Início</span>
+            </a>
+            <button type="button" onclick="abrirBusca()"
+                    class="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 transition active:text-brand dark:text-slate-400">
+                <i class="fa-solid fa-magnifying-glass text-lg" aria-hidden="true"></i>
+                <span>Buscar</span>
+            </button>
+            <button type="button" onclick="abrirCategorias()"
+                    class="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 transition active:text-brand dark:text-slate-400">
+                <i class="fa-solid fa-layer-group text-lg" aria-hidden="true"></i>
+                <span>Categorias</span>
+            </button>
+            <button type="button" onclick="abrirCarrinho({ focus: true })"
+                    class="relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 transition active:text-brand dark:text-slate-400">
+                <span class="relative">
+                    <i class="fa-solid fa-bag-shopping text-lg" aria-hidden="true"></i>
+                    <span data-cart-badge class="absolute -right-2.5 -top-2 hidden h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">0</span>
+                </span>
+                <span>Sacola</span>
+            </button>
+        </div>
+    </nav>
+
+    <div id="cat-drawer" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-label="Categorias">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="fecharCategorias()"></div>
+        <aside class="animate-drawer-left absolute left-0 top-0 flex h-full w-[82%] max-w-sm flex-col bg-white shadow-2xl dark:bg-slate-900">
+            <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+                <h2 class="text-base font-extrabold tracking-tight">Categorias</h2>
+                <button type="button" onclick="fecharCategorias()" title="Fechar"
+                        class="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                    <span class="sr-only">Fechar categorias</span>
+                </button>
+            </div>
+            <nav class="flex-1 overflow-y-auto px-2 py-2">
+                {% for c in categorias %}
+                    <a href="{{ c.url }}"
+                       class="flex min-h-[52px] items-center justify-between gap-3 rounded-xl px-4 text-sm font-semibold transition
+                              {% if c.ativo %}bg-brand/10 text-brand{% else %}text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800{% endif %}">
+                        <span>{{ c.label }}</span>
+                        {% if c.total %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ c.total }}</span>{% endif %}
+                    </a>
+                {% endfor %}
+            </nav>
+        </aside>
+    </div>
+
+    <div id="search-modal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-label="Buscar no catálogo">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="fecharBusca()"></div>
+        <div class="absolute inset-x-0 top-0 bg-white p-4 shadow-2xl dark:bg-slate-900">
+            <form method="get" action="{% url 'catalogo_publico' empresa.slug %}" role="search" class="mx-auto flex w-full max-w-2xl items-center gap-2">
+                {% if categoria_atual %}<input type="hidden" name="categoria" value="{{ categoria_atual }}">{% endif %}
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" aria-hidden="true"></i>
+                    <input type="search" name="q" id="search-modal-input" value="{{ termo_busca|default:'' }}"
+                           placeholder="Buscar por nome ou marca..."
+                           class="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/20 dark:border-slate-700 dark:bg-slate-800 dark:focus:bg-slate-800"
+                           aria-label="Buscar no catálogo">
+                </div>
+                <button type="button" onclick="fecharBusca()" title="Fechar"
+                        class="flex h-11 w-11 flex-none items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                    <span class="sr-only">Fechar busca</span>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var toggle = document.getElementById('theme-toggle');
+
+            function atualizarBotao() {
+                if (!toggle) return;
+                toggle.setAttribute('aria-pressed', root.classList.contains('dark') ? 'true' : 'false');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    var escuro = root.classList.toggle('dark');
+                    try { localStorage.setItem('bcmodas-theme', escuro ? 'dark' : 'light'); } catch (e) {}
+                    atualizarBotao();
+                });
+                atualizarBotao();
+            }
+
+            function abrir(el) { if (el) el.classList.remove('hidden'); }
+            function fechar(el) { if (el) el.classList.add('hidden'); }
+
+            window.abrirBusca = function () {
+                var modal = document.getElementById('search-modal');
+                abrir(modal);
+                var input = document.getElementById('search-modal-input');
+                if (input) setTimeout(function () { input.focus(); }, 60);
+            };
+            window.fecharBusca = function () { fechar(document.getElementById('search-modal')); };
+
+            window.abrirCategorias = function () { abrir(document.getElementById('cat-drawer')); };
+            window.fecharCategorias = function () { fechar(document.getElementById('cat-drawer')); };
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') { window.fecharBusca(); window.fecharCategorias(); }
+            });
+        })();
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

@@ -42,6 +42,16 @@ class EmpresaAdmin(PerfilAdminMixin, ModelAdmin):
         ),
         (_("Identidade Visual"), {"fields": ("logo", "favicon", "cor_primaria")}),
         (
+            _("Entrega e Frete"),
+            {
+                "fields": ("taxa_entrega_padrao",),
+                "description": _(
+                    "Taxa sugerida no checkout quando o cliente escolhe 'Entrega a Combinar'. "
+                    "Deixe 0,00 para informar 'a combinar' no WhatsApp."
+                ),
+            },
+        ),
+        (
             _("Catálogo Público"),
             {
                 "fields": ("link_catalogo",),

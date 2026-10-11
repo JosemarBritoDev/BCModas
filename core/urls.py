@@ -46,6 +46,11 @@ urlpatterns = [
         name='catalogo_cliente_logout',
     ),
     path(
+        'catalogo/<slug:slug>/termos/',
+        pedidos_views.catalogo_legal,
+        name='catalogo_legal',
+    ),
+    path(
         'catalogo/<slug:slug>/finalizar/',
         pedidos_views.catalogo_checkout,
         name='catalogo_checkout',

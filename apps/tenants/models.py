@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -39,6 +41,16 @@ class Empresa(models.Model):
         _("Instagram"), max_length=80, blank=True, default=""
     )
     endereco_origem = models.TextField(_("Endereço de Origem"), blank=True, default="")
+    taxa_entrega_padrao = models.DecimalField(
+        _("Taxa de Entrega Padrão"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text=_(
+            "Valor aplicado quando o cliente escolhe 'Entrega a Combinar'. "
+            "0,00 = taxa a combinar no WhatsApp."
+        ),
+    )
     status = models.CharField(
         _("Status"),
         max_length=20,

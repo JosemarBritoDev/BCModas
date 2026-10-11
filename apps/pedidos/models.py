@@ -25,6 +25,15 @@ class Pedido(models.Model):
         FATURADO_ATACADO = "FATURADO_ATACADO", _("Faturado Atacado")
         CANCELADO = "CANCELADO", _("Cancelado")
 
+    class FormaPagamento(models.TextChoices):
+        PIX = "PIX", _("Pix")
+        CREDITO = "CREDITO", _("Cartão de Crédito")
+        DEBITO = "DEBITO", _("Cartão de Débito")
+
+    class TipoEntrega(models.TextChoices):
+        RETIRADA_LOCAL = "RETIRADA_LOCAL", _("Retirar no Local (Grátis)")
+        ENTREGA = "ENTREGA", _("Entrega a Combinar")
+
     # Etapas operacionais que só podem ser atingidas com a liberação financeira.
     STATUS_BLOQUEADOS_FINANCEIRO = {
         "EM_PRODUCAO",
@@ -71,6 +80,22 @@ class Pedido(models.Model):
         choices=StatusFinanceiro.choices,
         default=StatusFinanceiro.AGUARDANDO_PAGAMENTO,
     )
+    forma_pagamento = models.CharField(
+        _("Forma de Pagamento"),
+        max_length=20,
+        choices=FormaPagamento.choices,
+        default=FormaPagamento.PIX,
+    )
+    tipo_entrega = models.CharField(
+        _("Tipo de Entrega"),
+        max_length=20,
+        choices=TipoEntrega.choices,
+        default=TipoEntrega.RETIRADA_LOCAL,
+    )
+    endereco_entrega = models.TextField(_("Endereço de Entrega"), blank=True, default="")
+    taxa_entrega = models.DecimalField(
+        _("Taxa de Entrega"), max_digits=10, decimal_places=2, default=Decimal("0.00")
+    )
     aceite_lgpd = models.BooleanField(_("Aceite LGPD"), default=False)
     ip_aceite = models.GenericIPAddressField(
         _("IP do Aceite"), blank=True, null=True
@@ -97,6 +122,11 @@ class Pedido(models.Model):
     @property
     def aguardando_liberacao_financeira(self):
         return self.status_financeiro == self.StatusFinanceiro.AGUARDANDO_PAGAMENTO
+
+    @property
+    def valor_total_com_frete(self):
+        """Total geral do pedido (produtos + taxa de entrega, quando houver)."""
+        return (self.valor_total or Decimal("0.00")) + (self.taxa_entrega or Decimal("0.00"))
 
     def clean(self):
         """Impede avanço operacional sem confirmação do pagamento.

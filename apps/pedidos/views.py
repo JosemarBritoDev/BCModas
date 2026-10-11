@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -13,10 +13,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from apps.clientes.models import Cliente
+from apps.financeiro.models import ContaReceber
 from apps.financeiro.services import criar_conta_receber_para_pedido
 from apps.pedidos.models import ItemPedido, Pedido
 from apps.pedidos.services import EstoqueInsuficiente, reservar_estoque
-from apps.produtos.models import Modelo, SKU
+from apps.produtos.models import Categoria, Modelo, SKU
 from apps.tenants.models import Empresa
 
 
@@ -31,6 +32,11 @@ def _only_digits(value):
     if not value:
         return ""
     return re.sub(r"\D", "", str(value))
+
+
+def _fmt_brl(valor):
+    """Formata um valor Decimal/float no padrão brasileiro (1.234,56)."""
+    return f"{Decimal(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _cliente_autenticado(request):
@@ -72,9 +78,25 @@ def _url_whatsapp_empresa(empresa):
 def _montar_payload_whatsapp(empresa, pedido):
     linhas = [
         f"• {item.quantidade}x {item.sku.modelo.nome} | {item.sku.cor_nome} "
-        f"| {item.sku.tamanho} — R$ {item.subtotal:,.2f}"
+        f"| {item.sku.tamanho} — R$ {_fmt_brl(item.subtotal)}"
         for item in pedido.itens.select_related("sku__modelo")
     ]
+
+    if pedido.tipo_entrega == Pedido.TipoEntrega.ENTREGA:
+        if pedido.endereco_entrega:
+            entrega = f"Entrega: {pedido.endereco_entrega}"
+        else:
+            entrega = "Entrega: endereço a confirmar"
+        if pedido.taxa_entrega and pedido.taxa_entrega > 0:
+            entrega += f" | Taxa: R$ {_fmt_brl(pedido.taxa_entrega)}"
+            total_final = pedido.valor_total_com_frete
+        else:
+            entrega += " | Taxa: a combinar"
+            total_final = pedido.valor_total
+    else:
+        entrega = "Entrega: Retirada no Local (Grátis)"
+        total_final = pedido.valor_total
+
     texto = [
         f"NOVO PEDIDO — {empresa.nome_fantasia}",
         f"Pedido #{pedido.pk}",
@@ -82,8 +104,13 @@ def _montar_payload_whatsapp(empresa, pedido):
         "ITENS:",
         *linhas,
         "",
-        f"TOTAL: R$ {pedido.valor_total:,.2f} "
+        f"TOTAL: R$ {_fmt_brl(total_final)} "
         f"({pedido.total_itens} {'item' if pedido.total_itens == 1 else 'itens'})",
+        "",
+        "FORMA DE PAGAMENTO:",
+        pedido.get_forma_pagamento_display() or "A definir",
+        "",
+        entrega,
         "",
         f"Cliente: {pedido.cliente_nome}",
     ]
@@ -129,6 +156,7 @@ def catalogo_publico(request, slug):
 
     tamanhos_ordenados = [t[0] for t in SKU.Tamanho.choices]
 
+    modelo_filtro = request.GET.get("categoria", "").strip().lower()
     modelos = (
         Modelo.objects.filter(empresa=empresa, visivel_catalogo=True)
         .prefetch_related(
@@ -141,6 +169,24 @@ def catalogo_publico(request, slug):
         )
         .order_by("nome")
     )
+
+    if modelo_filtro == "lancamentos":
+        modelos = modelos.filter(lancamento=True)
+    elif modelo_filtro == "atacado":
+        modelos = modelos.filter(preco_atacado__gt=Decimal("0"))
+    elif modelo_filtro:
+        modelos = modelos.filter(
+            categoria__empresa=empresa, categoria__slug=modelo_filtro
+        )
+
+    categoria_atual = modelo_filtro
+    categorias = _menu_categorias(empresa, categoria_atual)
+
+    termo_busca = request.GET.get("q", "").strip()
+    if termo_busca:
+        modelos = modelos.filter(
+            Q(nome__icontains=termo_busca) | Q(marca__icontains=termo_busca)
+        )
 
     catalogo_itens = []
     for modelo in modelos:
@@ -201,6 +247,7 @@ def catalogo_publico(request, slug):
                 "preco_atacado": float(modelo.preco_atacado) if modelo.tem_atacado else None,
                 "qtd_minima_atacado": modelo.qtd_minima_atacado,
                 "cores": cores_json,
+                "avaliacao": float(modelo.avaliacao or 0),
             }
         )
 
@@ -208,11 +255,71 @@ def catalogo_publico(request, slug):
         "empresa": empresa,
         "catalogo_itens": catalogo_itens,
         "catalogo_json": catalogo_json,
+        "categorias": categorias,
+        "categoria_atual": categoria_atual,
+        "termo_busca": termo_busca,
+        "total_modelos": modelos.count(),
         "tamanhos_ordenados": tamanhos_ordenados,
         "whatsapp_url": _url_whatsapp_empresa(empresa),
         "cliente_logado": _cliente_autenticado(request),
     }
     return render(request, "catalogo/index.html", contexto)
+
+
+def _menu_categorias(empresa, categoria_atual):
+    """Monta o menu horizontal de categorias do catálogo público.
+
+    As categorias são carregadas dinamicamente do modelo ``Categoria``,
+    exibindo apenas aquelas que possuem produtos ativos (visíveis) vinculados.
+    """
+    base = reverse("catalogo_publico", kwargs={"slug": empresa.slug})
+    itens = [{"slug": "", "label": "Todos", "url": base, "ativo": not categoria_atual}]
+
+    lancamentos = Modelo.objects.filter(
+        empresa=empresa, visivel_catalogo=True, lancamento=True
+    ).exists()
+    atacado = Modelo.objects.filter(
+        empresa=empresa, visivel_catalogo=True, preco_atacado__gt=0
+    ).exists()
+
+    especiais = []
+    if lancamentos:
+        especiais.append(("lancamentos", "Lançamentos"))
+    if atacado:
+        especiais.append(("atacado", "Atacado"))
+
+    for slug, label in especiais:
+        itens.append(
+            {
+                "slug": slug,
+                "label": label,
+                "url": f"{base}?categoria={slug}",
+                "ativo": categoria_atual == slug,
+            }
+        )
+
+    categorias = (
+        Categoria.objects.filter(empresa=empresa, ativo=True)
+        .annotate(
+            num_produtos=Count(
+                "produtos", filter=Q(produtos__visivel_catalogo=True), distinct=True
+            )
+        )
+        .filter(num_produtos__gt=0)
+        .order_by("ordem", "nome")
+    )
+
+    for categoria in categorias:
+        itens.append(
+            {
+                "slug": categoria.slug,
+                "label": categoria.nome,
+                "total": categoria.num_produtos,
+                "url": f"{base}?categoria={categoria.slug}",
+                "ativo": categoria_atual == categoria.slug,
+            }
+        )
+    return itens
 
 
 @require_http_methods(["POST"])
@@ -238,6 +345,29 @@ def catalogo_checkout(request, slug):
     if not aceite:
         messages.error(request, "É necessário aceitar os Termos de Uso e Política de Privacidade.")
         return _redirect_checkout(slug)
+
+    forma_raw = (request.POST.get("forma_pagamento") or "").upper()
+    forma_pagamento = (
+        forma_raw
+        if forma_raw in Pedido.FormaPagamento.values
+        else Pedido.FormaPagamento.PIX
+    )
+
+    entrega_raw = (request.POST.get("tipo_entrega") or "").upper()
+    tipo_entrega = (
+        entrega_raw
+        if entrega_raw in Pedido.TipoEntrega.values
+        else Pedido.TipoEntrega.RETIRADA_LOCAL
+    )
+
+    endereco_entrega = ""
+    taxa_entrega = Decimal("0.00")
+    if tipo_entrega == Pedido.TipoEntrega.ENTREGA:
+        endereco_entrega = (request.POST.get("endereco_entrega") or "").strip()
+        if not endereco_entrega:
+            messages.error(request, "Informe o endereço de entrega para finalizar o pedido.")
+            return _redirect_checkout(slug)
+        taxa_entrega = empresa.taxa_entrega_padrao or Decimal("0.00")
 
     sku_ids = []
     for key in request.POST.keys():
@@ -306,6 +436,10 @@ def catalogo_checkout(request, slug):
                 valor_total=valor_total,
                 status=Pedido.Status.AGUARDANDO_PAGAMENTO,
                 status_financeiro=Pedido.StatusFinanceiro.AGUARDANDO_PAGAMENTO,
+                forma_pagamento=forma_pagamento,
+                tipo_entrega=tipo_entrega,
+                endereco_entrega=endereco_entrega,
+                taxa_entrega=taxa_entrega,
                 aceite_lgpd=True,
                 ip_aceite=_get_client_ip(request),
                 data_aceite=timezone.now(),
@@ -317,7 +451,12 @@ def catalogo_checkout(request, slug):
                     for s, qtd, preco in itens_detalhados
                 ]
             )
-            criar_conta_receber_para_pedido(pedido)
+            forma_conta = {
+                "PIX": ContaReceber.FormaPagamento.PIX,
+                "CREDITO": ContaReceber.FormaPagamento.CARTAO,
+                "DEBITO": ContaReceber.FormaPagamento.CARTAO,
+            }.get(forma_pagamento, ContaReceber.FormaPagamento.PIX)
+            criar_conta_receber_para_pedido(pedido, forma_pagamento=forma_conta)
     except EstoqueInsuficiente as exc:
         messages.error(
             request,
@@ -360,3 +499,18 @@ def catalogo_pedido_enviado(request, slug, pedido_id):
         "whatsapp_url": _url_whatsapp_empresa(empresa),
     }
     return render(request, "catalogo/sucesso.html", contexto)
+
+
+@require_http_methods(["GET"])
+def catalogo_legal(request, slug):
+    """Página institucional de Termos de Uso e Política de Privacidade (LGPD)."""
+    empresa = get_object_or_404(Empresa, slug=slug)
+    if empresa.status != Empresa.Status.ATIVO:
+        raise Http404("Catálogo não disponível")
+
+    contexto = {
+        "empresa": empresa,
+        "whatsapp_url": _url_whatsapp_empresa(empresa),
+        "cliente_logado": _cliente_autenticado(request),
+    }
+    return render(request, "catalogo/legal.html", contexto)
