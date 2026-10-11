@@ -190,6 +190,9 @@ html.dark .erp-kpi-desc {
 }
 
 .silk-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     padding: 0 12px 6px;
 }
 

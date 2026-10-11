@@ -161,42 +161,6 @@
     color: #991b1b;
 }
 
-.silk-form {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    border-top: 1px solid #e5e7eb;
-    background: #ffffff;
-}
-
-.silk-input {
-    flex: 1;
-    padding: 9px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 10px;
-    font-size: 13.5px;
-    color: #111827;
-    outline: none;
-}
-
-.silk-input:focus {
-    border-color: #6b7280;
-    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.18);
-}
-
-.silk-send {
-    border: none;
-    border-radius: 10px;
-    padding: 9px 14px;
-    background: #374151;
-    color: #f9fafb;
-    font-size: 13.5px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.silk-send:hover { background: #111827; }
-
 /* Tema escuro do Unfold */
 .dark .silk-panel {
     background: #1f2937;
@@ -209,15 +173,4 @@
     background: #1f2937;
     color: #e5e7eb;
     border-color: #374151;
-}
-
-.dark .silk-form {
-    background: #1f2937;
-    border-top-color: #374151;
-}
-
-.dark .silk-input {
-    background: #111827;
-    border-color: #4b5563;
-    color: #e5e7eb;
 }

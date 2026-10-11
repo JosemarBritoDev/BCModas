@@ -32,6 +32,7 @@ class HelpAssistantService:
         "pedidos": "docs/manual_erp/02_pedidos_vendas.md",
         "financeiro": "docs/manual_erp/03_financeiro_caixa.md",
         "permissoes": "docs/manual_erp/04_permissoes_roles.md",
+        "clientes": "docs/manual_erp/05_clientes.md",
     }
 
     #: Nome amigável de cada módulo (usado nas mensagens).
@@ -40,6 +41,7 @@ class HelpAssistantService:
         "pedidos": "Pedidos e Vendas",
         "financeiro": "Financeiro",
         "permissoes": "Permissões",
+        "clientes": "Clientes",
     }
 
     #: Rota (prefixo) -> módulo. A ordem importa (prefixo mais específico antes).
@@ -48,7 +50,7 @@ class HelpAssistantService:
         ("/admin/tenants/", "permissoes"),
         ("/admin/usuarios/", "permissoes"),
         ("/admin/auth/", "permissoes"),
-        ("/admin/clientes/", "pedidos"),
+        ("/admin/clientes/", "clientes"),
         ("/admin/pedidos/", "pedidos"),
         ("/admin/produtos/", "produtos"),
     )
@@ -59,6 +61,7 @@ class HelpAssistantService:
         "pedidos": {"SUPERADMIN", "GERENTE", "VENDAS", "COMPRAS", "AUDITOR"},
         "financeiro": {"SUPERADMIN", "GERENTE", "FINANCEIRO", "AUDITOR"},
         "permissoes": {"SUPERADMIN", "GERENTE", "AUDITOR"},
+        "clientes": {"SUPERADMIN", "GERENTE", "VENDAS", "COMPRAS", "AUDITOR"},
     }
 
     #: Palavras-chave que denunciam uma tentativa de acessar outro módulo
@@ -101,12 +104,22 @@ class HelpAssistantService:
     #: Saudação devolvida quando o usuário apenas cumprimenta o assistente.
     SAUDACAO_RESPOSTA = "Olá! Como posso te ajudar com o ERP hoje?"
 
-    #: Perguntas guiadas (Modo Guiado) — chave -> frases canônicas (já
-    #: normalizadas) que acionam uma resposta curta sem depender da IA.
+    #: Perguntas guiadas (Modo Guiado / FAQ Interativo) — chave -> frases
+    #: canônicas (já normalizadas) que acionam uma resposta curta sem IA.
     GUIAS = {
         "visao_geral": {
             "o que e esta tela",
             "o que e essa tela",
+        },
+        "resumo": {
+            "resumo deste ecra",
+        },
+        "alertas": {
+            "como ler os alertas",
+        },
+        "graficos": {
+            "como os graficos sao atualizados",
+            "como os graficos atualizam",
         },
         "cadastrar": {
             "como cadastrar",
@@ -120,14 +133,74 @@ class HelpAssistantService:
             "regras de negocio",
             "quais as regras",
         },
+        "sku": {
+            "o que e um sku",
+        },
+        "precos": {
+            "diferenca de preco varejo atacado",
+            "qual a diferenca entre varejo e atacado",
+        },
+        "status_pedido": {
+            "fluxo de status",
+        },
+        "trava_financeira": {
+            "o que e a trava financeira",
+        },
+        "cancelar_pedido": {
+            "como cancelar um pedido",
+        },
+        "associar_cliente": {
+            "como associar um cliente",
+        },
+        "pf_pj": {
+            "pessoa fisica vs juridica",
+            "diferenca entre pf e pj",
+        },
+        "historico_cliente": {
+            "onde vejo o historico",
+        },
+        "inativar_cliente": {
+            "inativar cliente",
+            "como inativar um cliente",
+        },
+        "baixa_conta": {
+            "como dar baixa numa conta",
+            "como dar baixa em uma conta",
+        },
+        "caixa_pedidos": {
+            "o que e o caixa de pedidos",
+        },
+        "estorno": {
+            "estorno de valores",
+            "como estornar um valor",
+        },
+        "role": {
+            "o que e uma role",
+        },
     }
 
-    #: Respostas curtas do Modo Guiado por módulo (fallback "geral").
+    #: Respostas curtas do FAQ Interativo por módulo (fallback "geral").
     RESPOSTAS_CURTAS = {
         "geral": {
             "visao_geral": (
                 "Esta é a visão geral do ERP BC Modas. Use o menu lateral para "
-                "navegar entre os módulos Produtos, Pedidos, Financeiro e Usuários."
+                "navegar entre os módulos Produtos, Pedidos, Clientes, "
+                "Financeiro e Usuários."
+            ),
+            "resumo": (
+                "Aqui você vê os indicadores principais da fábrica: pedidos do "
+                "dia, faturamento no mês, contas a pagar próximas, pedidos "
+                "retidos e SKUs em alerta de estoque."
+            ),
+            "alertas": (
+                "Os cartões sinalizam situações que pedem atenção: Pedidos "
+                "Retidos (aguardando liberação financeira) e SKUs em Alerta de "
+                "Estoque (saldo menor ou igual a 5 peças), entre outros."
+            ),
+            "graficos": (
+                "Os indicadores refletem os dados salvos mais recentemente e são "
+                "atualizados a cada carregamento da página. Atualize a tela "
+                "após registrar movimentações para ver os novos valores."
             ),
             "cadastrar": (
                 "Depende da tela: abra o módulo desejado pelo menu lateral e "
@@ -135,7 +208,8 @@ class HelpAssistantService:
             ),
             "regras": (
                 "As regras específicas estão descritas no manual de cada módulo. "
-                "Abra a tela desejada e pergunte novamente, ou fale com um gerente."
+                "Abra a tela desejada e escolha uma pergunta, ou fale com um "
+                "gerente."
             ),
         },
         "produtos": {
@@ -153,6 +227,16 @@ class HelpAssistantService:
                 "Estoque é controlado por SKU (variação), não pelo modelo; o par "
                 "Modelo + Cor + Tamanho é único; e o preço de atacado entra "
                 "automaticamente ao atingir a quantidade mínima configurada."
+            ),
+            "sku": (
+                "SKU é a variação de um modelo: uma combinação única de "
+                "Modelo + Cor + Tamanho (ex.: Camiseta penteada branca tamanho M). "
+                "É no SKU que o estoque é controlado e dado baixa nas vendas."
+            ),
+            "precos": (
+                "O Preço Varejo é o valor da peça avulsa. O Preço Atacado passa a "
+                "valer quando o pedido atinge a Qtd. Mínima Atacado do modelo — o "
+                "sistema aplica o atacado automaticamente nesse caso."
             ),
         },
         "pedidos": {
@@ -173,6 +257,60 @@ class HelpAssistantService:
                 "Paga/Faturada), o pedido não avança para produção, separação, "
                 "entrega ou conclusão — é a trava financeira."
             ),
+            "status_pedido": (
+                "O fluxo é: Aguardando Pagamento → Pago/Liberado → Em Produção → "
+                "Em Separação → Pronto p/ Entrega → Enviado → Entregue → "
+                "Concluído (ou Cancelado). O pedido só avança para produção após "
+                "o pagamento ser confirmado."
+            ),
+            "trava_financeira": (
+                "É a regra que impede o pedido de avançar para produção, "
+                "separação, entrega ou conclusão enquanto o pagamento não estiver "
+                "confirmado — como Pago/Liberado, Faturado Atacado ou uma conta a "
+                "receber Paga/Faturada."
+            ),
+            "cancelar_pedido": (
+                "Abra o pedido, altere o status para Cancelado e salve. Pedidos "
+                "cancelados não geram movimentação financeira."
+            ),
+            "associar_cliente": (
+                "No pedido, selecione o cliente existente no campo Cliente ou, se "
+                "ainda não houver cadastro, preencha manualmente nome, documento "
+                "e WhatsApp no próprio pedido."
+            ),
+        },
+        "clientes": {
+            "visao_geral": (
+                "Esta tela pertence ao módulo de Clientes: reúne os compradores "
+                "(Pessoa Física ou Jurídica) com seus contatos e endereço, usados "
+                "nos pedidos e na auditoria (LGPD)."
+            ),
+            "cadastrar": (
+                "Vá em Clientes → Adicionar. Preencha Nome/Razão Social, Tipo de "
+                "Pessoa (PF ou PJ), CPF/CNPJ, WhatsApp, E-mail e endereço "
+                "(opcional). Mantenha Ativo marcado para liberar o cliente no dia "
+                "a dia."
+            ),
+            "regras": (
+                "Cada cliente é vinculado aos pedidos para auditoria (LGPD). PF "
+                "usa CPF e PJ usa CNPJ; inativar o cliente não apaga o cadastro, "
+                "apenas o remove do uso do dia a dia."
+            ),
+            "pf_pj": (
+                "Pessoa Física (PF) é o cliente pessoa comum e usa CPF; Pessoa "
+                "Jurídica (PJ) é uma empresa e usa CNPJ. O tipo escolhido define "
+                "qual documento é informado no cadastro."
+            ),
+            "historico_cliente": (
+                "O histórico fica registrado nos pedidos vinculados ao cliente e "
+                "nas datas de criação/atualização do cadastro, visíveis na aba de "
+                "Auditoria."
+            ),
+            "inativar_cliente": (
+                "Abra o cliente, desmarque o campo Ativo e salve. O cliente "
+                "inativo deixa de ser usado no dia a dia, mas o cadastro e o "
+                "histórico são mantidos."
+            ),
         },
         "financeiro": {
             "visao_geral": (
@@ -189,6 +327,21 @@ class HelpAssistantService:
                 "Marcar uma conta a receber como Recebida gera entrada de caixa; "
                 "marcar conta a pagar como Paga gera saída; há um único caixa por "
                 "empresa e data; e contas Pendentes mantêm a trava financeira."
+            ),
+            "baixa_conta": (
+                "Abra a conta e altere o status para Recebida (contas a receber) "
+                "ou Paga (contas a pagar). Isso gera automaticamente a entrada ou "
+                "saída correspondente no caixa."
+            ),
+            "caixa_pedidos": (
+                "É a área das Contas a Receber vinculadas a pedidos: mostra o que "
+                "cada pedido deve e contas com status Pago ou Faturado liberam o "
+                "pedido para produção e expedição."
+            ),
+            "estorno": (
+                "Não há um botão único de estorno: cancele ou ajuste a conta "
+                "original e registre a movimentação inversa no caixa, mantendo o "
+                "histórico auditável."
             ),
         },
         "permissoes": {
@@ -207,6 +360,11 @@ class HelpAssistantService:
                 "FINANCEIRO enxerga apenas o bloco Financeiro; AUDITOR é somente "
                 "leitura; o superusuário do Django sempre tem acesso total; e o "
                 "Silk bloqueia ajuda de módulos sem permissão da role."
+            ),
+            "role": (
+                "Role é o perfil de acesso do usuário no ERP. Os disponíveis são "
+                "SUPERADMIN, GERENTE, COMPRAS, VENDAS, FINANCEIRO e AUDITOR; cada "
+                "role enxerga e edita apenas o que o perfil permite."
             ),
         },
     }
@@ -285,14 +443,14 @@ class HelpAssistantService:
     # ── Saudações ────────────────────────────────────────────────────────────
     @staticmethod
     def _normalizar(texto):
-        """Minúsculas, sem acentos e sem pontuação, para casar saudações."""
+        """Minúsculas, sem acentos e sem pontuação, para casar frases."""
         texto = (texto or "").strip().lower()
         texto = "".join(
             caractere
             for caractere in unicodedata.normalize("NFD", texto)
             if unicodedata.category(caractere) != "Mn"
         )
-        texto = re.sub(r"[!?.,;:]+", " ", texto)
+        texto = re.sub(r"[!?.,;:/]+", " ", texto)
         return re.sub(r"\s+", " ", texto).strip()
 
     def e_saudacao(self, pergunta):
@@ -309,9 +467,13 @@ class HelpAssistantService:
         return None
 
     def _resposta_curta(self, chave, modulo):
-        """Resposta curta e direta do Modo Guiado para o módulo atual."""
+        """Resposta curta e direta do FAQ Interativo para o módulo atual."""
         respostas = self.RESPOSTAS_CURTAS.get(modulo) or self.RESPOSTAS_CURTAS["geral"]
-        return respostas.get(chave) or self.RESPOSTAS_CURTAS["geral"][chave]
+        return (
+            respostas.get(chave)
+            or self.RESPOSTAS_CURTAS["geral"].get(chave)
+            or "Não tenho uma resposta pronta para esta tela. Fale com um gerente."
+        )
 
     def carregar_manual(self, modulo):
         """Lê o conteúdo do manual Markdown do módulo (ou string vazia)."""

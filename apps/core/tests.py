@@ -39,7 +39,7 @@ class ModuloPorRotaTests(TestCase):
         casos = {
             "/admin/produtos/sku/": "produtos",
             "/admin/pedidos/pedido/": "pedidos",
-            "/admin/clientes/cliente/": "pedidos",
+            "/admin/clientes/cliente/": "clientes",
             "/admin/financeiro/contareceber/": "financeiro",
             "/admin/usuarios/usuario/": "permissoes",
             "/admin/tenants/empresa/": "permissoes",
@@ -130,7 +130,7 @@ class RespostaOfflineTests(TestCase):
 
 
 class ModoGuiadoTests(TestCase):
-    """Modo Guiado: perguntas padrão retornam respostas curtas, sem IA."""
+    """FAQ Interativo: perguntas padrão retornam respostas curtas, sem IA."""
 
     PERGUNTAS = {
         "visao_geral": "O que é esta tela?",
@@ -142,6 +142,44 @@ class ModoGuiadoTests(TestCase):
         "pedidos": "/admin/pedidos/pedido/",
         "financeiro": "/admin/financeiro/contareceber/",
         "permissoes": "/admin/usuarios/usuario/",
+        "clientes": "/admin/clientes/cliente/",
+    }
+
+    #: Perguntas específicas de cada módulo (FAQ expandido por tela).
+    FAQ = {
+        "produtos": {
+            "/admin/produtos/modelo/": {
+                "sku": "O que é um SKU?",
+                "precos": "Diferença de preço Varejo/Atacado",
+            },
+        },
+        "pedidos": {
+            "/admin/pedidos/pedido/": {
+                "status_pedido": "Fluxo de status",
+                "trava_financeira": "O que é a Trava Financeira?",
+                "cancelar_pedido": "Como cancelar um pedido?",
+                "associar_cliente": "Como associar um cliente?",
+            },
+        },
+        "clientes": {
+            "/admin/clientes/cliente/": {
+                "pf_pj": "Pessoa Física vs Jurídica",
+                "historico_cliente": "Onde vejo o histórico?",
+                "inativar_cliente": "Inativar cliente",
+            },
+        },
+        "financeiro": {
+            "/admin/financeiro/contareceber/": {
+                "baixa_conta": "Como dar baixa numa conta?",
+                "caixa_pedidos": "O que é o Caixa de Pedidos?",
+                "estorno": "Estorno de valores",
+            },
+        },
+        "permissoes": {
+            "/admin/usuarios/usuario/": {
+                "role": "O que é uma role?",
+            },
+        },
     }
 
     def test_respostas_curtas_dos_botoes(self):
@@ -158,6 +196,41 @@ class ModoGuiadoTests(TestCase):
                         HelpAssistantService.RESPOSTAS_CURTAS[modulo][chave],
                     )
 
+    def test_faq_especifico_por_modulo(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE)
+        for modulo, rotas in self.FAQ.items():
+            for rota, perguntas in rotas.items():
+                for chave, pergunta in perguntas.items():
+                    with self.subTest(modulo=modulo, chave=chave):
+                        resultado = HelpAssistantService(gerente, rota).responder(
+                            pergunta
+                        )
+                        self.assertFalse(resultado["bloqueado"])
+                        self.assertIsNone(resultado["fonte"])
+                        self.assertEqual(resultado["modulo"], modulo)
+                        self.assertEqual(
+                            resultado["resposta"],
+                            HelpAssistantService.RESPOSTAS_CURTAS[modulo][chave],
+                        )
+
+    def test_dashboard_faq(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE)
+        casos = {
+            "visao_geral": "O que é esta tela?",
+            "resumo": "Resumo deste ecrã",
+            "alertas": "Como ler os alertas?",
+            "graficos": "Como os gráficos são atualizados?",
+        }
+        for chave, pergunta in casos.items():
+            with self.subTest(chave=chave):
+                resultado = HelpAssistantService(gerente, "/admin/").responder(pergunta)
+                self.assertIsNone(resultado["modulo"])
+                self.assertIsNone(resultado["fonte"])
+                self.assertEqual(
+                    resultado["resposta"],
+                    HelpAssistantService.RESPOSTAS_CURTAS["geral"][chave],
+                )
+
     def test_variantes_modulares_dos_botoes(self):
         gerente = _usuario("gerente", Usuario.Role.GERENTE)
         casos = (
@@ -173,17 +246,6 @@ class ModoGuiadoTests(TestCase):
                     resultado["resposta"],
                     HelpAssistantService.RESPOSTAS_CURTAS[modulo]["cadastrar"],
                 )
-
-    def test_dashboard_usa_resposta_geral(self):
-        gerente = _usuario("gerente", Usuario.Role.GERENTE)
-        resultado = HelpAssistantService(gerente, "/admin/").responder(
-            "O que é esta tela?"
-        )
-        self.assertIsNone(resultado["modulo"])
-        self.assertEqual(
-            resultado["resposta"],
-            HelpAssistantService.RESPOSTAS_CURTAS["geral"]["visao_geral"],
-        )
 
     def test_texto_livre_nao_cai_no_modo_guiado(self):
         gerente = _usuario("gerente", Usuario.Role.GERENTE)
@@ -365,6 +427,33 @@ class SilkWidgetInjectionTests(TestCase):
         self.assertContains(resp, "O que é esta tela?")
         self.assertContains(resp, "Como cadastrar?")
         self.assertContains(resp, "Regras de negócio")
+        self.assertContains(resp, "Resumo deste ecrã")
+        self.assertContains(resp, "Como ler os alertas?")
+        self.assertContains(resp, "Como os gráficos são atualizados?")
+
+    def test_widget_nao_tem_campo_de_digitacao(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE, is_staff=True)
+        self.client.force_login(gerente)
+        resp = self.client.get(reverse("admin:index"))
+        self.assertNotContains(resp, 'id="silk-input"')
+        self.assertNotContains(resp, "silk-input")
+        self.assertNotContains(resp, "silk-send")
+        self.assertNotContains(resp, "Pergunte sobre esta tela")
+
+    def test_widget_index_faq_serve_respostas_da_dashboard(self):
+        gerente = _usuario("gerente", Usuario.Role.GERENTE, is_staff=True)
+        self.client.force_login(gerente)
+        resp = self.client.post(
+            reverse("silk_help"),
+            {"pergunta": "Resumo deste ecrã", "rota": "/admin/"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        dados = resp.json()
+        self.assertFalse(dados["bloqueado"])
+        self.assertEqual(
+            dados["resposta"],
+            HelpAssistantService.RESPOSTAS_CURTAS["geral"]["resumo"],
+        )
 
     def test_widget_aparece_nas_telas_de_listagem_e_edicao(self):
         superuser = Usuario.objects.create_superuser(

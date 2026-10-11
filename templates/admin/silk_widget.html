@@ -19,6 +19,7 @@
 </svg>
 
 <div id="silk-widget" class="silk-widget" data-endpoint="{% url 'silk_help' %}">
+    {% csrf_token %}
     <button type="button" id="silk-toggle" class="silk-avatar-btn"
             aria-label="Abrir assistente Silk" aria-expanded="false">
         <svg class="silk-avatar" viewBox="0 0 64 64" aria-hidden="true">
@@ -41,14 +42,6 @@
         </header>
 
         <div id="silk-messages" class="silk-messages" aria-live="polite"></div>
-
-        <form id="silk-form" class="silk-form" autocomplete="off">
-            {% csrf_token %}
-            <input type="text" id="silk-input" class="silk-input"
-                   placeholder="Pergunte sobre esta tela..." maxlength="500"
-                   aria-label="Sua pergunta">
-            <button type="submit" class="silk-send">Enviar</button>
-        </form>
     </section>
 </div>
 
@@ -60,8 +53,6 @@
     const toggle = document.getElementById("silk-toggle");
     const panel = document.getElementById("silk-panel");
     const closeBtn = document.getElementById("silk-close");
-    const form = document.getElementById("silk-form");
-    const input = document.getElementById("silk-input");
     const messages = document.getElementById("silk-messages");
     const endpoint = root.dataset.endpoint;
 
@@ -84,7 +75,6 @@
         root.classList.toggle("is-open", aberto);
         panel.hidden = !aberto;
         toggle.setAttribute("aria-expanded", aberto ? "true" : "false");
-        if (aberto) input.focus();
     }
 
     toggle.addEventListener("click", function () {
@@ -92,42 +82,58 @@
     });
     closeBtn.addEventListener("click", function () { setOpen(false); });
 
-    // ── Modo Guiado (Offline) ────────────────────────────────────────────────
+    // ── FAQ Interativo (botões) ──────────────────────────────────────────────
     const CHIPS_POR_MODULO = {
-        financeiro: [
+        inicio: [
             "O que é esta tela?",
-            "Como registrar contas?",
-            "Regras de negócio",
-        ],
-        pedidos: [
-            "O que é esta tela?",
-            "Como criar um pedido?",
-            "Regras de negócio",
+            "Resumo deste ecrã",
+            "Como ler os alertas?",
+            "Como os gráficos são atualizados?",
         ],
         produtos: [
             "O que é esta tela?",
             "Como cadastrar?",
             "Regras de negócio",
+            "O que é um SKU?",
+            "Diferença de preço Varejo/Atacado",
+        ],
+        pedidos: [
+            "O que é esta tela?",
+            "Fluxo de status",
+            "O que é a Trava Financeira?",
+            "Como cancelar um pedido?",
+            "Como associar um cliente?",
+        ],
+        clientes: [
+            "O que é esta tela?",
+            "Pessoa Física vs Jurídica",
+            "Onde vejo o histórico?",
+            "Inativar cliente",
+        ],
+        financeiro: [
+            "O que é esta tela?",
+            "Como dar baixa numa conta?",
+            "O que é o Caixa de Pedidos?",
+            "Estorno de valores",
         ],
         permissoes: [
             "O que é esta tela?",
             "Como definir acesso?",
             "Regras de negócio",
-        ],
-        geral: [
-            "O que é esta tela?",
-            "Como cadastrar?",
-            "Regras de negócio",
+            "O que é uma role?",
         ],
     };
 
     function moduloDaRota() {
+        const semBarra = window.location.pathname.replace(/\/$/, "");
+        if (semBarra === "/admin") return "inicio";
         const rota = window.location.pathname;
         if (rota.indexOf("/admin/financeiro/") === 0) return "financeiro";
-        if (rota.indexOf("/admin/pedidos/") === 0 || rota.indexOf("/admin/clientes/") === 0) return "pedidos";
+        if (rota.indexOf("/admin/clientes/") === 0) return "clientes";
+        if (rota.indexOf("/admin/pedidos/") === 0) return "pedidos";
         if (rota.indexOf("/admin/produtos/") === 0) return "produtos";
         if (rota.indexOf("/admin/usuarios/") === 0 || rota.indexOf("/admin/tenants/") === 0 || rota.indexOf("/admin/auth/") === 0) return "permissoes";
-        return "geral";
+        return "inicio";
     }
 
     let quickContainer = null;
@@ -138,7 +144,7 @@
         const container = document.createElement("div");
         container.className = "silk-quick flex flex-wrap gap-2 px-3 pb-2";
 
-        const perguntas = CHIPS_POR_MODULO[moduloDaRota()] || CHIPS_POR_MODULO.geral;
+        const perguntas = CHIPS_POR_MODULO[moduloDaRota()] || CHIPS_POR_MODULO.inicio;
         perguntas.forEach(function (texto) {
             const botao = document.createElement("button");
             botao.type = "button";
@@ -192,18 +198,12 @@
             carregando.remove();
             addMessage("Ops! Não consegui falar com o servidor agora.", "silk");
         }
+
+        addQuickActions();
     }
 
-    form.addEventListener("submit", function (evento) {
-        evento.preventDefault();
-        const pergunta = input.value.trim();
-        if (!pergunta) return;
-        input.value = "";
-        enviarPergunta(pergunta);
-    });
-
     addMessage(
-        "Olá! Sou o Silk, o guaxinim do ERP. Pergunte o que precisar sobre esta tela.",
+        "Olá! Sou o Silk, o guaxinim do ERP. Clique em um dos botões para saber mais sobre esta tela.",
         "silk"
     );
     addQuickActions();
