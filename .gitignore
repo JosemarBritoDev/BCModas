@@ -63,6 +63,9 @@ db.sqlite3
 db.sqlite3-journal
 staticfiles/
 
+# Uploads de mídia (logos, favicons, fotos de produtos) — volume no servidor
+media/
+
 # Flask stuff:
 instance/
 .webassets-cache
