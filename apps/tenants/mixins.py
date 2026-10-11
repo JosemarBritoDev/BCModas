@@ -13,7 +13,12 @@ class EmpresaScopedAdminMixin:
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         user = request.user
-        if user.is_superuser or getattr(user, "role", None) == "SUPERADMIN":
+        # Auditor/Visitante é somente leitura, mas enxerga todos os registros
+        # (como um superadmin), sem poder criar, alterar ou excluir.
+        if (
+            user.is_superuser
+            or getattr(user, "role", None) in {"SUPERADMIN", "AUDITOR"}
+        ):
             return qs
         empresa_id = getattr(user, "empresa_id", None)
         if not empresa_id:

@@ -30,19 +30,43 @@ class PerfilAdminMixin:
             return False
         return True
 
+    def _is_auditor(self, request):
+        """Indica se o usuário é o perfil somente leitura (Auditor/Visitante).
+
+        Superusuários nunca são tratados como auditores, preservando o acesso
+        total do administrador do sistema.
+        """
+        user = getattr(request, "user", None)
+        if user is None or not user.is_authenticated or user.is_superuser:
+            return False
+        return bool(getattr(user, "is_auditor", False))
+
     # O acesso é decidido exclusivamente pelo perfil (não por permissões
     # nativas do Django), por isso não delegamos ao ``super()``.
+    #
+    # Auditor/Visitante: enxerga todos os módulos e registros (inclusive os que
+    # não estão em ``perfis_permitidos``), porém nunca cria, altera ou exclui.
     def has_module_permission(self, request):
+        if self._is_auditor(request):
+            return True
         return self._perfil_autorizado(request)
 
     def has_view_permission(self, request, obj=None):
+        if self._is_auditor(request):
+            return True
         return self._perfil_autorizado(request)
 
     def has_add_permission(self, request):
+        if self._is_auditor(request):
+            return False
         return self._perfil_autorizado(request)
 
     def has_change_permission(self, request, obj=None):
+        if self._is_auditor(request):
+            return False
         return self._perfil_autorizado(request)
 
     def has_delete_permission(self, request, obj=None):
+        if self._is_auditor(request):
+            return False
         return self._perfil_autorizado(request)

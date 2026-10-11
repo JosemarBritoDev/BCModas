@@ -103,10 +103,15 @@ class EmpresaAdmin(PerfilAdminMixin, ModelAdmin):
 
     # ---- Travas de segurança (RBAC) --------------------------------------
     def has_view_permission(self, request, obj=None):
+        # Auditor/Visitante enxerga a confecção em modo somente leitura.
+        if self._is_auditor(request):
+            return True
         return self._perfil_autorizado(request) and bool(request.user.is_authenticated)
 
     def has_change_permission(self, request, obj=None):
         """Somente GERENTE/SUPERADMIN editam dados cadastrais e LGPD."""
+        if self._is_auditor(request):
+            return False
         return self._perfil_autorizado(request) and bool(
             getattr(request.user, "is_gerente", False)
         )
@@ -124,7 +129,7 @@ class EmpresaAdmin(PerfilAdminMixin, ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         """Atalho direto para a edição da fábrica ou para o cadastro inicial."""
-        if not self._perfil_autorizado(request):
+        if not self._perfil_autorizado(request) and not self._is_auditor(request):
             raise PermissionDenied
         qs = self.get_queryset(request)
         obj = (

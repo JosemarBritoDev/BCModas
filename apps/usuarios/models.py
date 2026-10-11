@@ -10,6 +10,7 @@ class Usuario(AbstractUser):
         COMPRAS = "COMPRAS", _("Compras")
         VENDAS = "VENDAS", _("Vendas")
         FINANCEIRO = "FINANCEIRO", _("Financeiro")
+        AUDITOR = "AUDITOR", _("Auditor / Visitante")
 
     empresa = models.ForeignKey(
         "tenants.Empresa",
@@ -40,6 +41,15 @@ class Usuario(AbstractUser):
             self.is_superuser
             or self.role in {self.Role.GERENTE, self.Role.SUPERADMIN}
         )
+
+    @property
+    def is_auditor(self):
+        """Perfil somente leitura (Auditor/Visitante).
+
+        Diferente de ``is_gerente``, não inclui ``is_superuser``: um
+        superusuário do Django nunca deve ser rebaixado a somente leitura.
+        """
+        return self.role == self.Role.AUDITOR
 
     @property
     def is_financeiro(self):
