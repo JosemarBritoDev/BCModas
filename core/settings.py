@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 from django.urls import reverse_lazy
@@ -339,8 +340,14 @@ UNFOLD = {
 # ─────────────────────────────────────────────────────────────────────────────
 # Segurança de produção — ativada sempre que DEBUG=False
 # (o TLS é terminado no Nginx, que envia o header X-Forwarded-Proto)
+#
+# Durante a suíte de testes (python manage.py test) as travas de TLS são
+# relaxadas: o client de teste fala HTTP puro, e SECURE_SSL_REDIRECT=True
+# devolveria 301 em todas as requisições, quebrando os testes.
 # ─────────────────────────────────────────────────────────────────────────────
-if not DEBUG:
+RODANDO_TESTES = "test" in sys.argv
+
+if not DEBUG and not RODANDO_TESTES:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
