@@ -32,11 +32,11 @@
 
     <div class="mx-auto w-full max-w-7xl px-4 pb-24">
         {% if catalogo_itens %}
-        <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4" id="produtos">
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6" id="produtos">
             {% for item in catalogo_itens %}
                 <article class="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-800"
                          data-produto-id="{{ item.modelo.pk }}">
-                    <div class="card-media relative aspect-[3/4] overflow-hidden bg-slate-100 dark:bg-slate-700">
+                    <div class="card-media relative aspect-[4/5] overflow-hidden bg-slate-100 dark:bg-slate-700">
                         {% if item.fotos %}
                             <img class="media-main h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" src="{{ item.fotos.0 }}" alt="{{ item.modelo.nome }}" loading="lazy">
                         {% else %}
@@ -55,9 +55,9 @@
                         </div>
 
                         {% if item.fotos|length > 1 %}
-                            <div class="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto p-2 no-scrollbar">
+                            <div class="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto p-1.5 no-scrollbar">
                                 {% for foto in item.fotos %}
-                                    <button type="button" class="thumb h-10 w-10 flex-none overflow-hidden rounded-lg border-2 {% if forloop.first %}border-brand{% else %}border-white/70{% endif %}" data-src="{{ foto }}" aria-label="Ver foto {{ forloop.counter }}">
+                                    <button type="button" class="thumb h-8 w-8 flex-none overflow-hidden rounded-lg border-2 {% if forloop.first %}border-brand{% else %}border-white/70{% endif %}" data-src="{{ foto }}" aria-label="Ver foto {{ forloop.counter }}">
                                         <img src="{{ foto }}" alt="" class="h-full w-full object-cover" loading="lazy">
                                     </button>
                                 {% endfor %}
@@ -65,7 +65,7 @@
                         {% endif %}
                     </div>
 
-                    <div class="flex flex-1 flex-col gap-1.5 p-3.5">
+                    <div class="flex flex-1 flex-col gap-1 p-3">
                         {% if item.modelo.marca %}<p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ item.modelo.marca }}</p>{% endif %}
                         <h2 class="text-sm font-semibold leading-snug text-slate-800 line-clamp-2 dark:text-slate-100">{{ item.modelo.nome }}</h2>
 
@@ -80,15 +80,15 @@
                         <div class="mt-auto pt-2">
                             {% if item.preco_atacado %}
                                 <p class="text-[11px] text-slate-400 dark:text-slate-500">Varejo <span class="line-through">R$ {{ item.preco_varejo|floatformat:2 }}</span></p>
-                                <p class="text-lg font-extrabold leading-tight text-brand">R$ {{ item.preco_atacado|floatformat:2 }}</p>
+                                <p class="text-base font-extrabold leading-tight text-brand">R$ {{ item.preco_atacado|floatformat:2 }}</p>
                                 <p class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">no atacado {{ item.qtd_minima_atacado }}+ peças</p>
                             {% else %}
-                                <p class="text-lg font-extrabold leading-tight text-brand">R$ {{ item.preco_varejo|floatformat:2 }}</p>
+                                <p class="text-base font-extrabold leading-tight text-brand">R$ {{ item.preco_varejo|floatformat:2 }}</p>
                                 <p class="text-[11px] text-slate-400 dark:text-slate-500">preço de varejo por peça</p>
                             {% endif %}
 
                             {% if item.cores %}
-                                <button type="button" class="escolher mt-3 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
+                                <button type="button" class="escolher mt-2.5 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
                                         data-produto="{{ item.modelo.pk }}">
                                     <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i> Adicionar à sacola
                                 </button>
